@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 redis_url = os.environ.get('CELERY_BROKER_URL', '')
 logger.info(f"Using Redis URL: {redis_url}")
 
-# Initialize Celery
-celery = Celery('test',
+# Initialize Celery with the same app name as the worker
+celery = Celery('content_plan',  # Match the app name in celery_worker.py
                 broker=redis_url,
                 backend=redis_url)
 
@@ -26,6 +26,13 @@ celery.conf.update(
     result_serializer='json',
     timezone='UTC',
     enable_utc=True,
+    task_track_started=True,
+    task_time_limit=3600,
+    task_soft_time_limit=3300,
+    worker_prefetch_multiplier=1,
+    broker_connection_retry=True,
+    broker_connection_retry_on_startup=True,
+    broker_connection_max_retries=100,
 )
 
 @celery.task
@@ -44,8 +51,16 @@ if __name__ == "__main__":
         result = simple_task.delay()
         logger.info(f"Task ID: {result.id}")
         
-        # Wait for result
-        logger.info("Waiting for result...")
+        # Check task status with retries
+        for i in range(5):
+            status = result.status
+            logger.info(f"Task status (attempt {i+1}): {status}")
+            if status == 'SUCCESS':
+                break
+            time.sleep(2)
+        
+        # Try to get result
+        logger.info("Attempting to get result...")
         task_result = result.get(timeout=10)
         logger.info(f"Task result: {task_result}")
     except Exception as e:
