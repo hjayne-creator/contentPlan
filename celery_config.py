@@ -20,3 +20,6 @@ celery.conf.update(
     task_soft_time_limit=3300,  # Soft timeout 55 minutes
     worker_prefetch_multiplier=1,  # Process one task at a time
 )
+
+print("Broker URL:", os.environ.get("CELERY_BROKER_URL"))
+print("Result Backend:", os.environ.get("CELERY_RESULT_BACKEND"))
