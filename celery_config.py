@@ -1,6 +1,10 @@
 import os
 from celery import Celery
 
+# DEBUG: Print Redis connection values
+print("📡 CELERY_BROKER_URL =", os.environ.get("CELERY_BROKER_URL"))
+print("📡 CELERY_RESULT_BACKEND =", os.environ.get("CELERY_RESULT_BACKEND"))
+
 # Initialize Celery using environment variables from Render
 celery = Celery(
     'content_plan',
@@ -21,5 +25,3 @@ celery.conf.update(
     worker_prefetch_multiplier=1,  # Process one task at a time
 )
 
-print("Broker URL:", os.environ.get("CELERY_BROKER_URL"))
-print("Result Backend:", os.environ.get("CELERY_RESULT_BACKEND"))
