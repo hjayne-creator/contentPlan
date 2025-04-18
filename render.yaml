@@ -1,33 +1,4 @@
-# Exported from Render on 2025-04-18T07:15:29Z
 services:
-- type: web
-  name: contentPlan
-  runtime: python
-  repo: https://github.com/hjayne-creator/contentPlan
-  plan: starter
-  envVars:
-  - key: CELERY_RESULT_BACKEND
-    sync: false
-  - key: CELERY_BROKER_URL
-    sync: false
-  - key: DATABASE_URL
-    sync: false
-  - key: FLASK_DEBUG
-    sync: false
-  - key: FLASK_ENV
-    sync: false
-  - key: OPENAI_MODEL
-    sync: false
-  - key: SERPAPI_API_KEY
-    sync: false
-  - key: OPENAI_API_KEY
-    sync: false
-  - key: SECRET_KEY
-    sync: false
-  region: oregon
-  buildCommand: pip install -r requirements.txt
-  startCommand: gunicorn app:app --timeout 120
-  autoDeploy: false
  - type: worker
     name: celery-worker
     region: ohio
