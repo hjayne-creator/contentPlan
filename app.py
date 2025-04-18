@@ -29,10 +29,14 @@ from sqlalchemy import text
 load_dotenv()
 
 app = Flask(__name__)
-app.config.from_object(get_config())
+config = get_config()
+app.config.from_object(config)
 
 # Initialize the configuration with the app
-get_config().init_app(app)
+config.init_app(app)
+
+# Log database configuration
+app.logger.info(f"Database URL: {app.config.get('SQLALCHEMY_DATABASE_URI')}")
 
 # Initialize Celery with Flask app
 celery.conf.update(app.config)
