@@ -9,7 +9,9 @@ logging.basicConfig(
 )
 
 # Load environment variables from .env file
-load_dotenv()
+# Only load if we're not in production (where Render.com provides the environment)
+if not os.environ.get('RENDER'):
+    load_dotenv()
 
 class Config:
     """Base configuration."""
@@ -19,12 +21,21 @@ class Config:
 
     # Database configuration
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # Handle both local and Render.com database URLs
-    DATABASE_URL = os.environ.get('DATABASE_URL')
-    if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    
+    # Handle database URL
+    @property
+    def SQLALCHEMY_DATABASE_URI(self):
+        db_url = os.environ.get('DATABASE_URL')
+        if not db_url:
+            logging.warning("DATABASE_URL not found in environment variables")
+            return 'postgresql://localhost/contentplan'
+        
         # Convert postgres:// to postgresql:// for SQLAlchemy
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL or 'postgresql://localhost/contentplan'
+        if db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql://', 1)
+        
+        logging.info(f"Using database URL: {db_url}")
+        return db_url
     
     # Generate a random secret key if not provided
     if 'SECRET_KEY' not in os.environ:
