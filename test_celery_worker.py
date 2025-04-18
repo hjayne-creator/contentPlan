@@ -1,5 +1,6 @@
 import os
 import logging
+import redis
 from celery_worker import celery
 import time
 
@@ -10,9 +11,28 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def test_redis_connection():
+    """Test Redis connection directly"""
+    redis_url = os.environ.get('CELERY_BROKER_URL', '')
+    logger.info(f"Testing Redis connection with URL: {redis_url}")
+    
+    try:
+        r = redis.from_url(redis_url)
+        r.ping()
+        logger.info("Redis connection successful!")
+        return True
+    except Exception as e:
+        logger.error(f"Redis connection failed: {str(e)}")
+        return False
+
 def main():
+    # Test Redis connection first
+    if not test_redis_connection():
+        logger.error("Cannot proceed without Redis connection")
+        return
+
     # Log environment variables
-    logger.info("Environment Variables:")
+    logger.info("\nEnvironment Variables:")
     logger.info(f"CELERY_BROKER_URL: {os.environ.get('CELERY_BROKER_URL')}")
     logger.info(f"CELERY_RESULT_BACKEND: {os.environ.get('CELERY_RESULT_BACKEND')}")
     
