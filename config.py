@@ -19,7 +19,12 @@ class Config:
 
     # Database configuration
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://localhost/contentplan')
+    # Handle both local and Render.com database URLs
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+        # Convert postgres:// to postgresql:// for SQLAlchemy
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL or 'postgresql://localhost/contentplan'
     
     # Generate a random secret key if not provided
     if 'SECRET_KEY' not in os.environ:
