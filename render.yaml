@@ -11,7 +11,7 @@ services:
         fromService:
           name: celery-redis
           type: redis
-          property: redis://red-d00ot424d50c73chr7mg:6379
+          property: connectionString
   - type: redis
     name: celery-redis
     region: oregon
