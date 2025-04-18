@@ -1,30 +1,56 @@
 import os
 from celery import Celery
 from celery.signals import after_setup_logger
+import logging
 
-# Initialize Celery using environment variables from Render
+# Get Redis URL from environment
+redis_url = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+logging.info(f"Using Redis URL: {redis_url}")
+
+# Initialize Celery
 celery = Celery(
     'content_plan',
-    broker=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-    backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+    broker=redis_url,
+    backend=redis_url
 )
 
-# Optional configurations
+# Configure Celery with more robust settings
 celery.conf.update(
+    # Basic settings
     task_serializer='json',
     accept_content=['json'],
     result_serializer='json',
     timezone='UTC',
     enable_utc=True,
+    
+    # Task settings
     task_track_started=True,
-    task_time_limit=3600,  # 1 hour timeout for tasks
-    task_soft_time_limit=3300,  # Soft timeout 55 minutes
-    worker_prefetch_multiplier=1,  # Process one task at a time
-    broker_connection_retry_on_startup=True,  # Enable connection retry on startup
-    broker_connection_max_retries=10,  # Maximum number of retries
-    broker_connection_retry_delay=5,  # Delay between retries in seconds
-    broker_heartbeat=10,  # Heartbeat interval in seconds
-    broker_pool_limit=10,  # Maximum number of connections in the pool
+    task_time_limit=3600,
+    task_soft_time_limit=3300,
+    worker_prefetch_multiplier=1,
+    
+    # Redis connection settings
+    broker_connection_retry=True,
+    broker_connection_retry_on_startup=True,
+    broker_connection_max_retries=100,
+    broker_connection_timeout=30,
+    broker_pool_limit=10,
+    broker_heartbeat=10,
+    
+    # Result backend settings
+    result_backend_transport_options={
+        'retry_policy': {
+            'timeout': 5.0,
+            'max_retries': 3,
+        },
+        'global_keyprefix': 'celery_results'
+    },
+    
+    # Redis specific settings
+    redis_socket_timeout=30,
+    redis_socket_connect_timeout=30,
+    redis_retry_on_timeout=True,
+    redis_max_connections=10
 )
 
 @after_setup_logger.connect
@@ -36,4 +62,4 @@ def setup_loggers(logger, *args, **kwargs):
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     ))
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)  # Changed to DEBUG for more verbose logging
