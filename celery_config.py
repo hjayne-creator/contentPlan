@@ -28,6 +28,8 @@ celery.conf.update(
     task_time_limit=3600,
     task_soft_time_limit=3300,
     worker_prefetch_multiplier=1,
+    worker_max_tasks_per_child=100,  # Restart worker after 100 tasks
+    worker_max_memory_per_child=200000,  # 200MB memory limit per worker
     
     # Redis connection settings
     broker_connection_retry=True,
@@ -50,7 +52,13 @@ celery.conf.update(
     redis_socket_timeout=30,
     redis_socket_connect_timeout=30,
     redis_retry_on_timeout=True,
-    redis_max_connections=10
+    redis_max_connections=10,
+    
+    # Worker settings
+    worker_concurrency=4,  # Reduced from default 16
+    worker_enable_remote_control=True,
+    worker_send_task_events=True,
+    task_send_sent_event=True
 )
 
 @after_setup_logger.connect
