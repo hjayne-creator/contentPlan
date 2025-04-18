@@ -12,9 +12,15 @@ services:
           name: celery-redis
           type: redis
           property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: celery-redis
+          type: redis
+          property: connectionString
+
   - type: redis
     name: celery-redis
     region: ohio
-    plan: starter # we choose a plan with persistence to ensure tasks are not lost upon restart
-    maxmemoryPolicy: noeviction # recommended policy for queues
-    ipAllowList: [] # only allow internal connections
+    plan: starter  # Redis with persistence enabled
+    maxmemoryPolicy: noeviction  # Recommended for Celery
+    ipAllowList: []  # Allow internal access only
