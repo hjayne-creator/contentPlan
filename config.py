@@ -59,7 +59,9 @@ class Config:
         # Set up database URL
         db_url = os.environ.get('DATABASE_URL')
         if not db_url:
-            logging.warning("DATABASE_URL not found in environment variables")
+            if os.environ.get('RENDER'):
+                raise ValueError("DATABASE_URL must be set in production environment")
+            logging.warning("DATABASE_URL not found in environment variables, using local development database")
             db_url = 'postgresql://localhost/contentplan'
         
         # Convert postgres:// to postgresql:// for SQLAlchemy
