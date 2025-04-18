@@ -2,13 +2,39 @@ from app import app
 from celery_config import celery
 import os
 import logging
+import redis
+from urllib.parse import urlparse
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Create Flask application context
 app.app_context().push()
+
+# Log Redis connection details (without exposing sensitive information)
+redis_url = os.environ.get('CELERY_BROKER_URL', '')
+if redis_url:
+    parsed_url = urlparse(redis_url)
+    logger.info(f"Redis host: {parsed_url.hostname}")
+    logger.info(f"Redis port: {parsed_url.port}")
+    logger.info(f"Redis database: {parsed_url.path}")
+
+# Test Redis connection
+try:
+    if redis_url:
+        r = redis.from_url(redis_url)
+        r.ping()
+        logger.info("Successfully connected to Redis")
+    else:
+        logger.error("CELERY_BROKER_URL not set in environment variables")
+except redis.ConnectionError as e:
+    logger.error(f"Failed to connect to Redis: {str(e)}")
+except Exception as e:
+    logger.error(f"Unexpected error testing Redis connection: {str(e)}")
 
 # Ensure configuration is loaded
 if not app.config.get('OPENAI_API_KEY'):
