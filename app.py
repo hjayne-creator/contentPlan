@@ -46,6 +46,16 @@ csrf = CSRFProtect(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# Run migrations on startup
+with app.app_context():
+    try:
+        from flask_migrate import upgrade
+        upgrade()
+        app.logger.info("Database migrations completed successfully")
+    except Exception as e:
+        app.logger.error(f"Error running migrations: {str(e)}")
+        raise
+
 # Register Celery with Flask app
 app.extensions['celery'] = celery
 
