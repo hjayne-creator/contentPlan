@@ -28,7 +28,7 @@ load_dotenv()
 # Initialize Celery
 celery = Celery('content_plan',
                 broker=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-                backend=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'))
+                backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'))
 
 # Configure Celery
 celery.conf.update(
