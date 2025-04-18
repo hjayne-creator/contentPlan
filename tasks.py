@@ -17,6 +17,7 @@ from prompts import (
     CONTENT_WRITER_PROMPT,
     CONTENT_EDITOR_PROMPT
 )
+import os
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -26,8 +27,8 @@ load_dotenv()
 
 # Initialize Celery
 celery = Celery('content_plan',
-                broker='redis://localhost:6379/0',
-                backend='redis://localhost:6379/0')
+                broker=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
+                backend=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'))
 
 # Configure Celery
 celery.conf.update(
