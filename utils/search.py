@@ -5,7 +5,7 @@ import time
 from flask import current_app
 from requests.exceptions import RequestException, Timeout, ConnectionError
 
-def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_delay=5, request_delay=3):
+def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_delay=5, request_delay=5):
     """
     Search using SerpAPI and return results with retry logic
     
