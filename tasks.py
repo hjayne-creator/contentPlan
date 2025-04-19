@@ -466,9 +466,6 @@ def continue_workflow_after_selection_task(self, job_id):
                     job.final_plan = final_plan
                     job.progress = 100
 
-                    # Add a pause at 100% completion
-                    time.sleep(5)
-
                     # Complete the workflow
                     workflow_manager.advance_phase()  # To COMPLETION
                     job.workflow_data = workflow_manager.save_state()
