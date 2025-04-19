@@ -18,6 +18,7 @@ from prompts import (
     CONTENT_EDITOR_PROMPT
 )
 import os
+import time
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ load_dotenv()
 # Initialize Celery
 celery = Celery('content_plan',
                 broker=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'),
-                backend=os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0'))
+                backend=os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0'))
 
 # Configure Celery
 celery.conf.update(
@@ -443,6 +444,9 @@ def continue_workflow_after_selection_task(self, job_id):
                     user_message = f"""
                     ## Brand Brief
                     {job.brand_brief}
+
+                    ## Search Results Analysis
+                    {job.search_analysis}
                     
                     ## Selected Theme
                     **{selected_theme.title}**
@@ -499,4 +503,9 @@ def continue_workflow_after_selection_task(self, job_id):
             current_app.logger.error(f"Error in theme selection workflow: {str(e)}")
             current_app.logger.error(traceback.format_exc())
             db.session.commit()
-            return {'status': 'error', 'message': str(e)} 
+            return {'status': 'error', 'message': str(e)}
+
+@celery.task
+def test_task():
+    time.sleep(2)  # Simulate some work
+    return "Test task completed successfully" 
