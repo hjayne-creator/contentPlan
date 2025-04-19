@@ -465,7 +465,7 @@ def continue_workflow_after_selection_task(self, job_id):
                     final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, user_message)
                     job.final_plan = final_plan
                     job.progress = 100
-                    
+
                     # Complete the workflow
                     workflow_manager.advance_phase()  # To COMPLETION
                     job.workflow_data = workflow_manager.save_state()
@@ -475,7 +475,10 @@ def continue_workflow_after_selection_task(self, job_id):
                     add_message_to_job(job, "✅ Content plan completed successfully!")
                     add_message_to_job(job, "🎉 Your content strategy is ready!")
                     db.session.commit()
-                    
+
+                    # Add a 3-second pause at 100% completion
+                    time.sleep(3)
+
                     return {'status': 'completed'}
                     
                 except Exception as e:
