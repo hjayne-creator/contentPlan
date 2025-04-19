@@ -1,23 +1,28 @@
 import requests
 import os
 import json
+import time
 from flask import current_app
+from requests.exceptions import RequestException, Timeout, ConnectionError
 
-def search_serpapi(query, api_key=None, num_results=5):
+def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_delay=5, request_delay=3):
     """
-    Search using SerpAPI and return results
+    Search using SerpAPI and return results with retry logic
     
     Args:
         query (str): Search query
         api_key (str): SerpAPI API key (optional, will use from config if not provided)
         num_results (int): Number of results to return
+        max_retries (int): Maximum number of retry attempts
+        retry_delay (int): Delay in seconds between retries (default: 5)
+        request_delay (int): Delay in seconds between consecutive requests (default: 3)
     
     Returns:
         list: List of search result dictionaries
     
     Raises:
         ValueError: If API key is not found
-        requests.exceptions.RequestException: If API request fails
+        requests.exceptions.RequestException: If API request fails after all retries
     """
     try:
         # Get API key from parameter, app config, or environment
@@ -39,50 +44,78 @@ def search_serpapi(query, api_key=None, num_results=5):
             "num": num_results
         }
         
-        # Make the request
-        response = requests.get(base_url, params=params, timeout=15)
-        response.raise_for_status()
-        data = response.json()
+        # Add delay between consecutive requests to avoid rate limiting
+        # This is separate from retry delay and helps with multiple keyword searches
+        time.sleep(request_delay)
         
-        # Extract and format results
-        results = []
-        
-        # Check for organic results
-        if "organic_results" in data:
-            for result in data["organic_results"]:
-                entry = {
-                    "title": result.get("title", ""),
-                    "link": result.get("link", ""),
-                    "snippet": result.get("snippet", ""),
-                    "position": result.get("position", 0)
-                }
-                results.append(entry)
-        
-        # Also check for inline videos if available
-        if "inline_videos" in data:
-            for video in data["inline_videos"]:
-                entry = {
-                    "title": video.get("title", ""),
-                    "link": video.get("link", ""),
-                    "snippet": f"Video by {video.get('channel', '')} - Duration: {video.get('duration', '')}",
-                    "position": video.get("position", 0),
-                    "type": "video"
-                }
-                results.append(entry)
-        
-        # If no results found, check for error message
-        if not results:
-            if "error" in data:
-                raise requests.exceptions.RequestException(f"SerpAPI error: {data['error']}")
-            else:
-                current_app.logger.warning(f"No results found in SerpAPI response for query: {query}")
-                return []
-        
-        return results
+        # Retry logic
+        for attempt in range(max_retries):
+            try:
+                # Make the request with increased timeout
+                response = requests.get(base_url, params=params, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+                
+                # Extract and format results
+                results = []
+                
+                # Check for organic results
+                if "organic_results" in data:
+                    for result in data["organic_results"]:
+                        entry = {
+                            "title": result.get("title", ""),
+                            "link": result.get("link", ""),
+                            "snippet": result.get("snippet", ""),
+                            "position": result.get("position", 0)
+                        }
+                        results.append(entry)
+                
+                # Also check for inline videos if available
+                if "inline_videos" in data:
+                    for video in data["inline_videos"]:
+                        entry = {
+                            "title": video.get("title", ""),
+                            "link": video.get("link", ""),
+                            "snippet": f"Video by {video.get('channel', '')} - Duration: {video.get('duration', '')}",
+                            "position": video.get("position", 0),
+                            "type": "video"
+                        }
+                        results.append(entry)
+                
+                # If no results found, check for error message
+                if not results:
+                    if "error" in data:
+                        error_msg = data.get("error", "Unknown error")
+                        if attempt < max_retries - 1:
+                            current_app.logger.warning(f"SerpAPI error for query '{query}': {error_msg}. Retrying in {retry_delay} seconds...")
+                            time.sleep(retry_delay)
+                            continue
+                        raise RequestException(f"SerpAPI error: {error_msg}")
+                    else:
+                        current_app.logger.warning(f"No results found in SerpAPI response for query: {query}")
+                        return []
+                
+                return results
+                
+            except Timeout:
+                if attempt < max_retries - 1:
+                    current_app.logger.warning(f"Timeout for query '{query}'. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+                raise
+            except ConnectionError:
+                if attempt < max_retries - 1:
+                    current_app.logger.warning(f"Connection error for query '{query}'. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+                raise
+            except RequestException as e:
+                if attempt < max_retries - 1:
+                    current_app.logger.warning(f"Request error for query '{query}': {str(e)}. Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    continue
+                raise
     
-    except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"Error with SerpAPI request: {str(e)}")
-        raise
     except ValueError as e:
         current_app.logger.error(f"Error with SerpAPI configuration: {str(e)}")
         raise
