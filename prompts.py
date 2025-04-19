@@ -132,17 +132,17 @@ FORMAT YOUR OUTPUT:
 ## Brand Brief
 [Include the refined brand brief]
 
+## Search Results Analysis
+[Include the refined search results analysis]
+
 ## Selected Theme: [Theme Name]
 [Brief description of why this theme is strategically valuable]
 
-## Content Cluster Structure
-[Include the refined content cluster framework]
-
-## Article Recommendations
-[Include ALL article ideas from the Content Writer, organized by pillar topics. For each pillar topic:
-1. List the pillar article with its title, target keyword, word count, article type, and description
+## Pillar Topics & Articles
+[Organize the article ideas provided by the Content Writer by pillar topic. For each pillar topic:
+1. List the pillar article title
 2. List all supporting articles with their titles, target keywords, and descriptions
-3. Maintain the original formatting and details provided by the Content Writer]
+]
 
 ## Implementation Guidelines
 - **Recommended Publishing Cadence**: [e.g., 2 articles per week]
@@ -150,6 +150,4 @@ FORMAT YOUR OUTPUT:
 - **Success Metrics**: [KPIs to track]
 - **Additional Considerations**: [Any other strategic notes]
 
-## Next Steps
-[3-5 bullet points outlining recommended next actions]
-""" 
+"""
