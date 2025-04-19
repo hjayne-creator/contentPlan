@@ -13,7 +13,6 @@ Your specific responsibilities:
    - Key topics and subtopics
    - Frequently used keywords and phrases (SEO)
    - Competitor topics
-   - Potential content gaps
 
 FORMAT YOUR OUTPUT:
 
