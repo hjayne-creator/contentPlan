@@ -467,7 +467,7 @@ def continue_workflow_after_selection_task(self, job_id):
                     job.progress = 100
 
                     # Add a pause at 100% completion
-                    time.sleep(4)
+                    time.sleep(5)
 
                     # Complete the workflow
                     workflow_manager.advance_phase()  # To COMPLETION
@@ -478,9 +478,6 @@ def continue_workflow_after_selection_task(self, job_id):
                     add_message_to_job(job, "✅ Content plan completed successfully!")
                     add_message_to_job(job, "🎉 Your content strategy is ready!")
                     db.session.commit()
-
-                    # Add a pause at 100% completion
-                    time.sleep(4)
 
                     return {'status': 'completed'}
                     
