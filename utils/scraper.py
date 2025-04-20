@@ -6,6 +6,9 @@ import time
 import random
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import logging
+
+logger = logging.getLogger(__name__)
 
 def validate_url(url):
     """Validate if the given string is a proper URL."""
@@ -44,7 +47,7 @@ def scrape_website(url):
     try:
         # Validate URL format
         if not validate_url(url):
-            return f"Error fetching website: Invalid URL format. Please include http:// or https://"
+            return f"Error scraping website: Invalid URL format. Please include http:// or https://"
         
         # Add a random delay between 2-5 seconds
         time.sleep(random.uniform(2, 5))
@@ -126,6 +129,12 @@ def scrape_website(url):
         # Check if we got meaningful content
         if len(clean_text) < 100:
             return f"Error scraping website: Insufficient content retrieved (only {len(clean_text)} characters)"
+        
+        # Truncate content to 8000 characters if it's too long
+        MAX_CONTENT_LENGTH = 8000
+        if len(clean_text) > MAX_CONTENT_LENGTH:
+            clean_text = clean_text[:MAX_CONTENT_LENGTH] + "... (truncated)"
+            logger.info(f"Content truncated to {MAX_CONTENT_LENGTH} characters")
         
         return clean_text
     
