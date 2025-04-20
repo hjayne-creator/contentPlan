@@ -131,7 +131,7 @@ def scrape_website(url):
             return f"Error scraping website: Insufficient content retrieved (only {len(clean_text)} characters)"
         
         # Truncate content to 8000 characters if it's too long
-        MAX_CONTENT_LENGTH = 8000
+        MAX_CONTENT_LENGTH = 5000
         if len(clean_text) > MAX_CONTENT_LENGTH:
             clean_text = clean_text[:MAX_CONTENT_LENGTH] + "... (truncated)"
             logger.info(f"Content truncated to {MAX_CONTENT_LENGTH} characters")
