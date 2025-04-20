@@ -42,6 +42,8 @@ def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_dela
             "api_key": api_key,
             "engine": "google",
             "num": num_results
+            "hl": "en",  # Language: English
+            "gl": "us"   # Country: United States
         }
         
         # Add delay between consecutive requests to avoid rate limiting
