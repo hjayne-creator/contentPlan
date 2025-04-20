@@ -5,7 +5,7 @@ import time
 from flask import current_app
 from requests.exceptions import RequestException, Timeout, ConnectionError
 
-def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_delay=5, request_delay=5):
+def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_delay=5, request_delay=3):
     """
     Search using SerpAPI and return results with retry logic
     
@@ -56,6 +56,15 @@ def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_dela
                 response.raise_for_status()
                 data = response.json()
                 
+                # Add detailed logging of the response
+                current_app.logger.info(f"SerpAPI Response for query '{query}':")
+                current_app.logger.info(f"Response status: {response.status_code}")
+                current_app.logger.info(f"Response keys: {list(data.keys())}")
+                if "organic_results" in data:
+                    current_app.logger.info(f"Number of organic results: {len(data['organic_results'])}")
+                if "inline_videos" in data:
+                    current_app.logger.info(f"Number of video results: {len(data['inline_videos'])}")
+                
                 # Extract and format results
                 results = []
                 
@@ -66,7 +75,9 @@ def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_dela
                             "title": result.get("title", ""),
                             "link": result.get("link", ""),
                             "snippet": result.get("snippet", ""),
-                            "position": result.get("position", 0)
+                            "position": result.get("position", 0),
+                            "displayed_link": result.get("displayed_link", ""),
+                            "source": result.get("source", "")
                         }
                         results.append(entry)
                 
@@ -92,7 +103,15 @@ def search_serpapi(query, api_key=None, num_results=5, max_retries=3, retry_dela
                             continue
                         raise RequestException(f"SerpAPI error: {error_msg}")
                     else:
-                        current_app.logger.warning(f"No results found in SerpAPI response for query: {query}")
+                        # Check for specific response patterns
+                        if "search_metadata" in data and data.get("search_metadata", {}).get("status") == "No results":
+                            current_app.logger.warning(f"No results found in SerpAPI response for query: {query} (explicit no results status)")
+                        elif "organic_results" in data and not data["organic_results"]:
+                            current_app.logger.warning(f"Empty organic results array for query: {query}")
+                        elif "organic_results" not in data:
+                            current_app.logger.warning(f"No organic_results field in response for query: {query}")
+                        else:
+                            current_app.logger.warning(f"No results found in SerpAPI response for query: {query}")
                         return []
                 
                 return results
