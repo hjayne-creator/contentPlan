@@ -231,113 +231,125 @@ def process_workflow_task(self, job_id):
             add_message_to_job(job, "🔍 Extracting brand information and key insights...")
             db.session.commit()
             
-            user_message = f"""
-            ## Website Content
-            {website_content[:8000]}... (truncated)
-            
-            ## Search Results
-            {json.dumps(unique_results[:10], indent=2)}
-            
-            Please analyze this content and provide the Brand Brief and Search Results Analysis.
-            """
-            
-            response = run_agent_with_openai(RESEARCH_AGENT_PROMPT, user_message)
-            
-            # Parse the results
-            brand_brief = ""
-            search_analysis = ""
-            
-            if "## Brand Brief" in response:
-                parts = response.split("## Brand Brief", 1)
-                if len(parts) > 1:
-                    remaining = parts[1]
-                    if "## Search Results Analysis" in remaining:
-                        brand_parts = remaining.split("## Search Results Analysis", 1)
-                        brand_brief = brand_parts[0].strip()
-                        search_analysis = brand_parts[1].strip()
-                    else:
-                        brand_brief = remaining.strip()
-            
-            job.brand_brief = brand_brief
-            job.search_analysis = search_analysis
-            job.progress = 40
-            add_message_to_job(job, "✅ Completed brand brief analysis")
-            add_message_to_job(job, "✅ Completed search results analysis")
-            add_message_to_job(job, "📊 Moving to content theme generation...")
-            db.session.commit()
-            
-            # Update task state
-            self.update_state(state='PROGRESS',
-                            meta={'current': 40, 'total': 100,
-                                  'status': 'Research phase completed'})
-            
-            # Advance workflow to ANALYSIS phase
-            workflow_manager.advance_phase()  # To ANALYSIS
-            job.workflow_data = workflow_manager.save_state()
-            job.current_phase = workflow_manager.current_phase
-            db.session.commit()
-            
-            # Generate themes
-            add_message_to_job(job, "🎯 ANALYSIS PHASE: Generating content themes")
-            add_message_to_job(job, "🤖 Analyzing brand brief and search results for theme opportunities...")
-            db.session.commit()
-            
-            user_message = f"""
-            ## Brand Brief
-            {job.brand_brief}
-            
-            ## Search Analysis
-            {job.search_analysis}
-            
-            Please generate 6 distinct content themes based on this information.
-            """
-            
-            themes_response = run_agent_with_openai(CONTENT_ANALYST_PROMPT, user_message)
-            
-            # Parse themes
-            if "## Content Themes" in themes_response:
-                themes_text = themes_response.split("## Content Themes", 1)[1].strip()
+            try:
+                user_message = f"""
+                ## Website Content
+                {website_content}
                 
-                import re
-                pattern = r'(\d+)\.\s+\*\*(.*?)\*\*\s+(.*?)(?=\d+\.\s+\*\*|\Z)'
-                matches = re.finditer(pattern, themes_text, re.DOTALL)
+                ## Search Results
+                {json.dumps(unique_results[:10], indent=2)}
                 
-                # Clear any existing themes for this job
-                Theme.query.filter_by(job_id=job_id).delete()
+                Please analyze this content and provide the Brand Brief and Search Results Analysis.
+                """
                 
-                for match in matches:
-                    theme_num = match.group(1).strip()
-                    title = match.group(2).strip()
-                    description = match.group(3).strip()
-                    
-                    # Create theme in database
-                    theme = Theme(
-                        job_id=job_id,
-                        title=title,
-                        description=description,
-                        is_selected=False
-                    )
-                    db.session.add(theme)
+                logger.info("Starting OpenAI API call for research phase")
+                response = run_agent_with_openai(RESEARCH_AGENT_PROMPT, user_message)
+                logger.info("OpenAI API call completed successfully")
                 
-                db.session.commit()
-                theme_count = len(list(re.finditer(pattern, themes_text)))
-                add_message_to_job(job, f"✅ Generated {theme_count} content themes")
-                add_message_to_job(job, "⏳ Waiting for theme selection...")
+                # Parse the results
+                brand_brief = ""
+                search_analysis = ""
+                
+                if "## Brand Brief" in response:
+                    parts = response.split("## Brand Brief", 1)
+                    if len(parts) > 1:
+                        remaining = parts[1]
+                        if "## Search Results Analysis" in remaining:
+                            brand_parts = remaining.split("## Search Results Analysis", 1)
+                            brand_brief = brand_parts[0].strip()
+                            search_analysis = brand_parts[1].strip()
+                        else:
+                            brand_brief = remaining.strip()
+                
+                job.brand_brief = brand_brief
+                job.search_analysis = search_analysis
+                job.progress = 40
+                add_message_to_job(job, "✅ Completed brand brief analysis")
+                add_message_to_job(job, "✅ Completed search results analysis")
+                add_message_to_job(job, "📊 Moving to content theme generation...")
                 db.session.commit()
                 
-                # Advance workflow to THEME_SELECTION phase
-                workflow_manager.advance_phase()  # To THEME_SELECTION
+                # Update task state
+                self.update_state(state='PROGRESS',
+                                meta={'current': 40, 'total': 100,
+                                      'status': 'Research phase completed'})
+                
+                # Advance workflow to ANALYSIS phase
+                workflow_manager.advance_phase()  # To ANALYSIS
                 job.workflow_data = workflow_manager.save_state()
                 job.current_phase = workflow_manager.current_phase
-                job.status = 'awaiting_selection'
                 db.session.commit()
                 
-                return {'status': 'awaiting_selection'}
-            else:
-                error_msg = "❌ Failed to parse themes from AI response"
+                # Generate themes
+                add_message_to_job(job, "🎯 ANALYSIS PHASE: Generating content themes")
+                add_message_to_job(job, "🤖 Analyzing brand brief and search results for theme opportunities...")
+                db.session.commit()
+                
+                user_message = f"""
+                ## Brand Brief
+                {job.brand_brief}
+                
+                ## Search Analysis
+                {job.search_analysis}
+                
+                Please generate 6 distinct content themes based on this information.
+                """
+                
+                themes_response = run_agent_with_openai(CONTENT_ANALYST_PROMPT, user_message)
+                
+                # Parse themes
+                if "## Content Themes" in themes_response:
+                    themes_text = themes_response.split("## Content Themes", 1)[1].strip()
+                    
+                    import re
+                    pattern = r'(\d+)\.\s+\*\*(.*?)\*\*\s+(.*?)(?=\d+\.\s+\*\*|\Z)'
+                    matches = re.finditer(pattern, themes_text, re.DOTALL)
+                    
+                    # Clear any existing themes for this job
+                    Theme.query.filter_by(job_id=job_id).delete()
+                    
+                    for match in matches:
+                        theme_num = match.group(1).strip()
+                        title = match.group(2).strip()
+                        description = match.group(3).strip()
+                        
+                        # Create theme in database
+                        theme = Theme(
+                            job_id=job_id,
+                            title=title,
+                            description=description,
+                            is_selected=False
+                        )
+                        db.session.add(theme)
+                    
+                    db.session.commit()
+                    theme_count = len(list(re.finditer(pattern, themes_text)))
+                    add_message_to_job(job, f"✅ Generated {theme_count} content themes")
+                    add_message_to_job(job, "⏳ Waiting for theme selection...")
+                    db.session.commit()
+                    
+                    # Advance workflow to THEME_SELECTION phase
+                    workflow_manager.advance_phase()  # To THEME_SELECTION
+                    job.workflow_data = workflow_manager.save_state()
+                    job.current_phase = workflow_manager.current_phase
+                    job.status = 'awaiting_selection'
+                    db.session.commit()
+                    
+                    return {'status': 'awaiting_selection'}
+                else:
+                    error_msg = "❌ Failed to parse themes from AI response"
+                    job.status = 'error'
+                    job.error = error_msg
+                    add_message_to_job(job, error_msg)
+                    db.session.commit()
+                    return {'status': 'error', 'message': error_msg}
+                
+            except Exception as e:
+                error_msg = f"Error in research phase: {str(e)}"
+                logger.error(error_msg, exc_info=True)
                 job.status = 'error'
                 job.error = error_msg
-                add_message_to_job(job, error_msg)
+                add_message_to_job(job, f"❌ {error_msg}")
                 db.session.commit()
                 return {'status': 'error', 'message': error_msg}
             
@@ -465,7 +477,7 @@ def continue_workflow_after_selection_task(self, job_id):
                     final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, user_message)
                     job.final_plan = final_plan
                     job.progress = 100
-
+                    
                     # Complete the workflow
                     workflow_manager.advance_phase()  # To COMPLETION
                     job.workflow_data = workflow_manager.save_state()
@@ -475,7 +487,7 @@ def continue_workflow_after_selection_task(self, job_id):
                     add_message_to_job(job, "✅ Content plan completed successfully!")
                     add_message_to_job(job, "🎉 Your content strategy is ready!")
                     db.session.commit()
-
+                    
                     return {'status': 'completed'}
                     
                 except Exception as e:
