@@ -44,7 +44,7 @@ def scrape_website(url):
     try:
         # Validate URL format
         if not validate_url(url):
-            return f"Error scraping website: Invalid URL format. Please include http:// or https://"
+            return f"Error fetching website: Invalid URL format. Please include http:// or https://"
         
         # Add a random delay between 2-5 seconds
         time.sleep(random.uniform(2, 5))
