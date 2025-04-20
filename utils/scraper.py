@@ -2,6 +2,9 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+import time
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 def validate_url(url):
     """Validate if the given string is a proper URL."""
@@ -10,6 +13,19 @@ def validate_url(url):
         return all([result.scheme, result.netloc])
     except ValueError:
         return False
+
+def create_session():
+    """Create a requests session with retry logic."""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,  # number of retries
+        backoff_factor=1,  # wait 1, 2, 4 seconds between retries
+        status_forcelist=[500, 502, 503, 504]  # HTTP status codes to retry on
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
 
 def scrape_website(url):
     """Scrape website content using BeautifulSoup."""
@@ -28,8 +44,11 @@ def scrape_website(url):
             'Upgrade-Insecure-Requests': '1',
         }
         
+        # Create a session with retry logic
+        session = create_session()
+        
         # Make the request with a timeout
-        response = requests.get(url, headers=headers, timeout=15)
+        response = session.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         
         # Check content type
@@ -77,6 +96,11 @@ def scrape_website(url):
         return clean_text
     
     except requests.exceptions.RequestException as e:
-        return f"Error scraping website: Request failed - {str(e)}"
+        if isinstance(e, requests.exceptions.ConnectionError):
+            return f"Error scraping website: Connection error - {str(e)}. The website might be blocking requests or experiencing issues."
+        elif isinstance(e, requests.exceptions.Timeout):
+            return f"Error scraping website: Request timed out - {str(e)}"
+        else:
+            return f"Error scraping website: Request failed - {str(e)}"
     except Exception as e:
         return f"Error scraping website: {str(e)}"
