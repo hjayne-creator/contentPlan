@@ -47,8 +47,8 @@ def run_agent_with_openai(system_message, user_message, model=None):
         total_input_tokens = system_tokens + user_tokens
 
         # Set max tokens for completion (leave room for input)
-        max_completion_tokens = 2000  # Reduced from 4000
-        max_input_tokens = 6000  # Leave room for completion
+        max_completion_tokens = 4000  # Reduced from 4000
+        max_input_tokens = 4000  # Leave room for completion
         
         logger.info(f"Token counts - System: {system_tokens}, User: {user_tokens}, Total: {total_input_tokens}")
 
