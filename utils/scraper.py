@@ -43,16 +43,15 @@ def create_session():
     return session
 
 def scrape_website(url):
-    """Scrape website content using BeautifulSoup."""
+    """Scrape website for meta title, meta description, and main body text (h1, h2, h3, p)."""
     try:
-        # Validate URL format
         if not validate_url(url):
-            return f"Error scraping website: Invalid URL format. Please include http:// or https://"
-        
-        # Add a random delay between 2-5 seconds
+            return {
+                "success": False,
+                "error": "Invalid URL format. Please include http:// or https://"
+            }
+
         time.sleep(random.uniform(2, 5))
-        
-        # Set headers to mimic a modern browser
         headers = {
             'User-Agent': get_random_user_agent(),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -67,85 +66,85 @@ def scrape_website(url):
             'Sec-Fetch-User': '?1',
             'Cache-Control': 'max-age=0'
         }
-        
-        # Create a session with retry logic
         session = create_session()
-        
-        # Make the request with a longer timeout
         response = session.get(
-            url, 
-            headers=headers, 
-            timeout=30,  # increased timeout
-            verify=True,  # verify SSL certificates
-            allow_redirects=True  # follow redirects
+            url,
+            headers=headers,
+            timeout=30,
+            verify=True,
+            allow_redirects=True
         )
-        
-        # Check response status
         if response.status_code == 403:
-            return "Error scraping website: Access forbidden (403). The website might be blocking automated requests."
+            return {"success": False, "error": "Access forbidden (403). The website might be blocking automated requests."}
         elif response.status_code == 429:
-            return "Error scraping website: Too many requests (429). Please try again later."
-        
+            return {"success": False, "error": "Too many requests (429). Please try again later."}
         response.raise_for_status()
-        
-        # Check content type
         content_type = response.headers.get('Content-Type', '').lower()
         if 'text/html' not in content_type:
-            return f"Error scraping website: Not an HTML page (Content-Type: {content_type})"
-        
-        # Parse with BeautifulSoup
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Remove script, style, nav, footer, header elements
-        for element in soup(["script", "style", "nav", "footer", "header", "aside", "iframe", "noscript"]):
-            element.extract()
-            
-        # Get the main content - prefer articles or main elements if they exist
-        main_content = None
-        
-        # Try to find main content containers
-        for container in ['article', 'main', '.content', '#content', '.main', '#main', '.article', '.post']:
-            if container.startswith('.') or container.startswith('#'):
-                selector = container
-            else:
-                selector = container
-            
-            elements = soup.select(selector)
-            if elements:
-                main_content = ' '.join([elem.get_text(separator=' ', strip=True) for elem in elements])
-                break
-        
-        # If no specific content container found, use the body
-        if not main_content:
-            main_content = soup.body.get_text(separator=' ', strip=True) if soup.body else ''
-        
-        # If still empty, use the entire document
-        if not main_content:
-            main_content = soup.get_text(separator=' ', strip=True)
-            
-        # Clean up text (remove extra whitespace)
-        clean_text = re.sub(r'\s+', ' ', main_content).strip()
-        
-        # Check if we got meaningful content
-        if len(clean_text) < 100:
-            return f"Error scraping website: Insufficient content retrieved (only {len(clean_text)} characters)"
-        
-        # Truncate content to 8000 characters if it's too long
-        MAX_CONTENT_LENGTH = 5000
-        if len(clean_text) > MAX_CONTENT_LENGTH:
-            clean_text = clean_text[:MAX_CONTENT_LENGTH] + "... (truncated)"
-            logger.info(f"Content truncated to {MAX_CONTENT_LENGTH} characters")
-        
-        return clean_text
-    
+            return {"success": False, "error": f"Not an HTML page (Content-Type: {content_type})"}
+
+        # Use correct encoding if possible
+        if response.encoding:
+            html = response.text
+        else:
+            response.encoding = response.apparent_encoding
+            html = response.text
+        soup = BeautifulSoup(html, 'html.parser')
+
+        # Extract meta title
+        title = ''
+        if soup.title and soup.title.string:
+            title = soup.title.string.strip()
+        else:
+            # fallback to og:title
+            og_title = soup.find('meta', property='og:title')
+            if og_title and og_title.get('content'):
+                title = og_title['content'].strip()
+
+        # Extract meta description
+        description = ''
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        if meta_desc and meta_desc.get('content'):
+            description = meta_desc['content'].strip()
+        else:
+            og_desc = soup.find('meta', property='og:description')
+            if og_desc and og_desc.get('content'):
+                description = og_desc['content'].strip()
+
+        # Extract h1, h2, h3, p tags in order of appearance
+        body_elements = []
+        for tag in soup.find_all(['h1', 'h2', 'h3', 'p']):
+            text = tag.get_text(separator=' ', strip=True)
+            if text:
+                body_elements.append(text)
+        body_text = ' '.join(body_elements)
+        # Clean up whitespace
+        body_text = re.sub(r'\s+', ' ', body_text).strip()
+        # Truncate to ~1000 words (8000 chars max)
+        words = body_text.split()
+        if len(words) > 1000:
+            body_text = ' '.join(words[:1000]) + '... (truncated)'
+        if len(body_text) > 8000:
+            body_text = body_text[:8000] + '... (truncated)'
+
+        # If all fields are empty, return error
+        if not (title or description or body_text):
+            return {"success": False, "error": "No meaningful content extracted from the page."}
+
+        return {
+            "success": True,
+            "title": title,
+            "description": description,
+            "body": body_text
+        }
     except requests.exceptions.RequestException as e:
         if isinstance(e, requests.exceptions.ConnectionError):
-            return f"Error scraping website: Connection error - {str(e)}. The website might be blocking requests or experiencing issues."
+            return {"success": False, "error": f"Connection error - {str(e)}. The website might be blocking requests or experiencing issues."}
         elif isinstance(e, requests.exceptions.Timeout):
-            return f"Error scraping website: Request timed out - {str(e)}"
+            return {"success": False, "error": f"Request timed out - {str(e)}"}
         elif isinstance(e, requests.exceptions.SSLError):
-            return f"Error scraping website: SSL error - {str(e)}"
+            return {"success": False, "error": f"SSL error - {str(e)}"}
         else:
-            return f"Error scraping website: Request failed - {str(e)}"
+            return {"success": False, "error": f"Request failed - {str(e)}"}
     except Exception as e:
-        return f"Error scraping website: {str(e)}"
+        return {"success": False, "error": str(e)}
