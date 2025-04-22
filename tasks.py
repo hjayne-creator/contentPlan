@@ -11,7 +11,8 @@ import traceback
 from dotenv import load_dotenv
 from celery import Celery
 from prompts import (
-    RESEARCH_AGENT_PROMPT,
+    BRAND_BRIEF_PROMPT,
+    SEARCH_ANALYSIS_PROMPT,
     CONTENT_ANALYST_PROMPT,
     CONTENT_STRATEGIST_CLUSTER_PROMPT,
     CONTENT_WRITER_PROMPT,
@@ -228,43 +229,58 @@ def process_workflow_task(self, job_id):
             
             # Research phase
             add_message_to_job(job, "📊 RESEARCH PHASE: Analyzing website content and search results")
-            add_message_to_job(job, "🔍 Extracting brand information and key insights...")
+            add_message_to_job(job, "🔍 Extracting brand information...")
             db.session.commit()
             
             try:
-                user_message = f"""
+                # First request: Analyze website content for brand brief
+                brand_brief_message = f"""
                 ## Website Content
                 {website_content}
                 
+                Please analyze this content and provide a comprehensive Brand Brief.
+                """
+                
+                logger.info("Starting OpenAI API call for brand brief analysis")
+                brand_brief_response = run_agent_with_openai(BRAND_BRIEF_PROMPT, brand_brief_message)
+                logger.info("OpenAI API call for brand brief completed successfully")
+                
+                # Extract brand brief
+                brand_brief = ""
+                if "## Brand Brief" in brand_brief_response:
+                    brand_brief = brand_brief_response.split("## Brand Brief", 1)[1].strip()
+                else:
+                    brand_brief = brand_brief_response.strip()
+                
+                job.brand_brief = brand_brief
+                job.progress = 30
+                add_message_to_job(job, "✅ Completed brand brief analysis")
+                db.session.commit()
+                
+                # Second request: Analyze search results
+                add_message_to_job(job, "🔍 Analyzing search results...")
+                db.session.commit()
+                
+                search_analysis_message = f"""
                 ## Search Results
                 {json.dumps(unique_results[:10], indent=2)}
                 
-                Please analyze this content and provide the Brand Brief and Search Results Analysis.
+                Please analyze these search results and provide a Search Results Analysis.
                 """
                 
-                logger.info("Starting OpenAI API call for research phase")
-                response = run_agent_with_openai(RESEARCH_AGENT_PROMPT, user_message)
-                logger.info("OpenAI API call completed successfully")
+                logger.info("Starting OpenAI API call for search results analysis")
+                search_analysis_response = run_agent_with_openai(SEARCH_ANALYSIS_PROMPT, search_analysis_message)
+                logger.info("OpenAI API call for search results analysis completed successfully")
                 
-                # Parse the results
-                brand_brief = ""
+                # Extract search analysis
                 search_analysis = ""
+                if "## Search Results Analysis" in search_analysis_response:
+                    search_analysis = search_analysis_response.split("## Search Results Analysis", 1)[1].strip()
+                else:
+                    search_analysis = search_analysis_response.strip()
                 
-                if "## Brand Brief" in response:
-                    parts = response.split("## Brand Brief", 1)
-                    if len(parts) > 1:
-                        remaining = parts[1]
-                        if "## Search Results Analysis" in remaining:
-                            brand_parts = remaining.split("## Search Results Analysis", 1)
-                            brand_brief = brand_parts[0].strip()
-                            search_analysis = brand_parts[1].strip()
-                        else:
-                            brand_brief = remaining.strip()
-                
-                job.brand_brief = brand_brief
                 job.search_analysis = search_analysis
                 job.progress = 40
-                add_message_to_job(job, "✅ Completed brand brief analysis")
                 add_message_to_job(job, "✅ Completed search results analysis")
                 add_message_to_job(job, "📊 Moving to content theme generation...")
                 db.session.commit()
@@ -292,7 +308,7 @@ def process_workflow_task(self, job_id):
                 ## Search Analysis
                 {job.search_analysis}
                 
-                Please generate 6 distinct content themes based on this information.
+                Please generate 6 distinct content themes based on this information that will be used for blog posts for the provided brand.
                 """
                 
                 themes_response = run_agent_with_openai(CONTENT_ANALYST_PROMPT, user_message)
