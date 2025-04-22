@@ -129,15 +129,18 @@ def process_workflow_task(self, job_id):
             add_message_to_job(job, f"🔍 Retrieving content from {job.website_url}...")
             db.session.commit()
             
-            website_content = scrape_website(job.website_url)
-            
-            if website_content.startswith("Error"):
+            website_content_result = scrape_website(job.website_url)
+
+            if not website_content_result.get("success"):
                 job.status = 'error'
-                job.error = website_content
-                add_message_to_job(job, f"❌ Error: {website_content}")
+                job.error = website_content_result.get("error", "Unknown error")
+                add_message_to_job(job, f"❌ Error: {job.error}")
                 db.session.commit()
-                return {'status': 'error', 'message': website_content}
-            
+                return {'status': 'error', 'message': job.error}
+
+            # Compose a concise content string for OpenAI
+            website_content = f"""Title: {website_content_result.get('title', '')}\nDescription: {website_content_result.get('description', '')}\nBody: {website_content_result.get('body', '')}\n"""
+
             job.website_content_length = len(website_content)
             job.progress = 10
             add_message_to_job(job, f"✅ Successfully retrieved {len(website_content)} characters of content")
