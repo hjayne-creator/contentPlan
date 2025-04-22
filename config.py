@@ -44,7 +44,7 @@ class Config:
     
     # Default OpenAI model
     OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4.1')
-    OPENAI_MODEL_FALLBACK = 'gpt-4'
+    OPENAI_MODEL_FALLBACK = 'gpt-4o'
     
     # Application settings
     MAX_WEBSITE_CONTENT_LENGTH = int(os.environ.get('MAX_WEBSITE_CONTENT_LENGTH', 20000))
