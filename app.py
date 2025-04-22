@@ -17,7 +17,8 @@ from utils.workflow import WorkflowManager
 from models import db, Job, Theme
 from tasks import celery, process_workflow_task, continue_workflow_after_selection_task
 from prompts import (
-    RESEARCH_AGENT_PROMPT,
+    BRAND_BRIEF_PROMPT,
+    SEARCH_ANALYSIS_PROMPT,
     CONTENT_ANALYST_PROMPT,
     CONTENT_STRATEGIST_CLUSTER_PROMPT,
     CONTENT_WRITER_PROMPT,
