@@ -43,7 +43,7 @@ def create_session():
     return session
 
 def scrape_website(url):
-    """Scrape website for meta title, meta description, and main body text (h1, h2, h3, p)."""
+    """Scrape website for meta title, meta description, and main body text (h1, h2, h3, p, li)."""
     try:
         if not validate_url(url):
             return {
@@ -91,12 +91,19 @@ def scrape_website(url):
             html = response.text
         soup = BeautifulSoup(html, 'html.parser')
 
+        # Remove navigation, footer, header, sidebar, and common boilerplate elements
+        for selector in [
+            "nav", "footer", "header", "aside", "iframe", "noscript",
+            ".menu", ".navbar", ".footer", ".header", ".sidebar", "#sidebar", "#nav", "#footer", "#header"
+        ]:
+            for element in soup.select(selector):
+                element.extract()
+
         # Extract meta title
         title = ''
         if soup.title and soup.title.string:
             title = soup.title.string.strip()
         else:
-            # fallback to og:title
             og_title = soup.find('meta', property='og:title')
             if og_title and og_title.get('content'):
                 title = og_title['content'].strip()
@@ -111,13 +118,20 @@ def scrape_website(url):
             if og_desc and og_desc.get('content'):
                 description = og_desc['content'].strip()
 
-        # Extract h1, h2, h3, p tags in order of appearance
+        # Extract h1, h2, h3, p, li tags in order of appearance
         body_elements = []
-        for tag in soup.find_all(['h1', 'h2', 'h3', 'p']):
+        for tag in soup.find_all(['h1', 'h2', 'h3', 'p', 'li']):
             text = tag.get_text(separator=' ', strip=True)
             if text:
                 body_elements.append(text)
-        body_text = ' '.join(body_elements)
+        # Remove duplicate lines
+        seen = set()
+        unique_body = []
+        for line in body_elements:
+            if line not in seen:
+                unique_body.append(line)
+                seen.add(line)
+        body_text = ' '.join(unique_body)
         # Clean up whitespace
         body_text = re.sub(r'\s+', ' ', body_text).strip()
         # Truncate to ~1000 words (8000 chars max)
@@ -127,9 +141,11 @@ def scrape_website(url):
         if len(body_text) > 8000:
             body_text = body_text[:8000] + '... (truncated)'
 
-        # If all fields are empty, return error
+        # Lower minimum threshold for meaningful content
         if not (title or description or body_text):
             return {"success": False, "error": "No meaningful content extracted from the page."}
+        if len(body_text) < 50:
+            return {"success": False, "error": f"Insufficient content retrieved (only {len(body_text)} characters)"}
 
         return {
             "success": True,
