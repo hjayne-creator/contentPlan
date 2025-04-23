@@ -60,8 +60,8 @@ def run_agent_with_openai(system_message, user_message, model=None):
             logger.info("User message truncated")
 
         # Add timeout and retry logic
-        max_retries = 3
-        retry_delay = 5  # seconds
+        max_retries = 2
+        retry_delay = 4  # seconds
         last_error = None
 
         for attempt in range(max_retries):
