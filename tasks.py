@@ -388,9 +388,9 @@ def continue_workflow_after_selection_task(self, job_id):
     from app import app
     
     with app.app_context():
-        # Get a fresh copy of the job
+        # Get a fresh copy of the job with a row-level lock
         db.session.expire_all()  # Expire all objects in the session
-        job = Job.query.get_or_404(job_id)
+        job = db.session.query(Job).filter_by(id=job_id).with_for_update().first()
 
         # GUARD: Prevent duplicate Content Writer prompts
         if job.article_ideas is not None and str(job.article_ideas).strip() != "":
