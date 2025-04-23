@@ -84,12 +84,12 @@ def scrape_website(url):
         if len(body_text) < 50:
             return {"success": False, "error": f"Insufficient content retrieved (only {len(body_text)} characters)"}
 
-        # Truncate to ~1000 words (8000 chars max)
+        # Truncate to ~500 words (4000 chars max)
         words = body_text.split()
-        if len(words) > 1000:
-            body_text = ' '.join(words[:1000]) + '... (truncated)'
-        if len(body_text) > 8000:
-            body_text = body_text[:8000] + '... (truncated)'
+        if len(words) > 500:
+            body_text = ' '.join(words[:500]) + '... (truncated)'
+        if len(body_text) > 4000:
+            body_text = body_text[:4000] + '... (truncated)'
 
         return {
             "success": True,
