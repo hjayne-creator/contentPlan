@@ -93,8 +93,8 @@ def scrape_website(url):
 
         # Remove navigation, footer, header, sidebar, and common boilerplate elements
         for selector in [
-            "nav", "footer", "header", "aside", "iframe", "noscript",
-            ".menu", ".navbar", ".footer", ".header", ".sidebar", "#sidebar", "#nav", "#footer", "#header"
+            "nav", "footer", "aside", "iframe", 
+            ".menu", ".navbar", ".footer", ".sidebar", "#sidebar", "#nav", "#footer"
         ]:
             for element in soup.select(selector):
                 element.extract()
