@@ -43,7 +43,7 @@ class Config:
         logging.warning("SERPAPI_API_KEY not found in environment variables. Search functionality will use mock data.")
     
     # Default OpenAI model
-    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4.1')
+    OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o')
     OPENAI_MODEL_FALLBACK = 'gpt-4o'
     
     # Application settings
