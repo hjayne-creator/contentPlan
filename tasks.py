@@ -402,6 +402,10 @@ def continue_workflow_after_selection_task(self, job_id):
             current_app.logger.warning(f"[Job {job_id}] Skipping Content Writer step. Status: {job.status}, Phase: {job.current_phase}")
             return {'status': 'skipped', 'message': 'Article ideas already exist or job not in correct phase.'}
         
+        # Set status to 'ideating' and commit immediately to prevent concurrent ideation
+        job.status = 'ideating'
+        db.session.commit()
+        
         try:
             workflow_manager = WorkflowManager()
             workflow_manager.load_state(job.workflow_data)
