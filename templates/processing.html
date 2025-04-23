@@ -138,7 +138,7 @@ function checkJobStatus() {
                 // Add a delay before redirecting to show the 100% progress
                 setTimeout(() => {
                     window.location.href = '/results/{{ job_id }}';
-                }, 5000); // Wait 5 seconds before redirecting
+                }, 3000); // Wait 3 seconds before redirecting
             }
             
             // Handle errors
@@ -148,7 +148,7 @@ function checkJobStatus() {
             }
             
             // Continue polling if job is in progress
-            if (data.status === 'processing' || data.status === 'initialized' || data.status === 'awaiting_selection') {
+            if (data.status === 'processing' || data.status === 'initialized' || data.status === 'awaiting_selection' || data.status === 'ideating') {
                 console.log('Current messages count:', data.messages ? data.messages.length : 0);
                 setTimeout(checkJobStatus, 2000); // Poll every 2 seconds
             }
