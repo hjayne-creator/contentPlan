@@ -92,12 +92,12 @@ def scrape_website(url):
         soup = BeautifulSoup(html, 'html.parser')
 
         # Remove navigation, footer, header, sidebar, and common boilerplate elements
-        for selector in [
-            "nav", "footer", "aside", "iframe", 
-            ".menu", ".navbar", ".footer", ".sidebar", "#sidebar", "#nav", "#footer"
-        ]:
-            for element in soup.select(selector):
-                element.extract()
+        # for selector in [
+        #     "nav", "footer", "aside", "iframe", 
+        #     ".menu", ".navbar", ".footer", ".sidebar", "#sidebar", "#nav", "#footer"
+        # ]:
+        #     for element in soup.select(selector):
+        #         element.extract()
 
         # Extract meta title
         title = ''
