@@ -139,7 +139,7 @@ def process_workflow_task(self, job_id):
                 return {'status': 'error', 'message': job.error}
 
             # Compose a concise content string for OpenAI
-            website_content = f"""Title: {website_content_result.get('title', '')}\nDescription: {website_content_result.get('description', '')}\nBody: {website_content_result.get('body', '')}\n"""
+            website_content = f"""\nTitle: {website_content_result.get('title', '')}\nDescription: {website_content_result.get('description', '')}\nBody: {website_content_result.get('body', '')}\n"""
 
             job.website_content_length = len(website_content)
             job.progress = 10
