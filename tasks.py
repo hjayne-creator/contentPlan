@@ -391,6 +391,12 @@ def continue_workflow_after_selection_task(self, job_id):
         # Get a fresh copy of the job
         db.session.expire_all()  # Expire all objects in the session
         job = Job.query.get_or_404(job_id)
+
+        # GUARD: Prevent duplicate Content Writer prompts
+        if job.article_ideas is not None and str(job.article_ideas).strip() != "":
+            add_message_to_job(job, "⚠️ Skipping article ideation: already completed for this job.")
+            current_app.logger.warning(f"[Job {job_id}] Article ideas already exist, skipping Content Writer step.")
+            return {'status': 'skipped', 'message': 'Article ideas already exist for this job.'}
         
         try:
             workflow_manager = WorkflowManager()
