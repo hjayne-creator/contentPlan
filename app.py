@@ -208,6 +208,12 @@ def theme_selection(job_id):
         if not theme_number or not theme_number.isdigit():
             return jsonify({'error': 'Invalid theme number'}), 400
         
+        # Idempotency check: if a theme is already selected or job is not awaiting_selection, reject
+        already_selected = Theme.query.filter_by(job_id=job_id, is_selected=True).first()
+        if already_selected or job.status != 'awaiting_selection':
+            app.logger.warning(f"Theme selection already made or job not awaiting selection for job {job_id}")
+            return jsonify({'error': 'Theme already selected or job not awaiting selection'}), 409
+        
         # Update job with selected theme and advance workflow
         workflow_manager = WorkflowManager()
         workflow_manager.load_state(job.workflow_data)
@@ -534,6 +540,19 @@ def cleanup_jobs():
         flash(f'Error deleting jobs: {str(e)}', 'error')
     
     return redirect(url_for('admin_jobs'))
+
+@app.route('/test-celery')
+def test_celery():
+    from celery_worker import celery
+    from tasks import test_task
+    
+    # Send a test task
+    result = test_task.delay()
+    
+    return {
+        'task_id': result.id,
+        'status': 'Task sent successfully'
+    }
 
 if __name__ == '__main__':
     app.run(debug=True) 
