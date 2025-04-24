@@ -95,6 +95,14 @@ For each pillar topic, create:
 - 1 in-depth pillar article concept with title and brief description
 - 3-5 supporting spoke article concepts with titles and brief descriptions
 
+Do not include these basee words in your output:
+- "Revolutionize"
+- "Empower"
+- "Unleash"
+- "Streamline"
+- "Enhance"
+- "Unlock"
+
 FORMAT YOUR OUTPUT:
 
 ## Content Ideas: [Theme Name]
@@ -128,6 +136,14 @@ Your specific responsibilities:
 3. Refine article titles for SEO, brand alignment, and audience appeal
 4. Format the final deliverable in professional Markdown
 5. Add strategic recommendations and implementation notes
+
+Do not include these basee words in your output:
+- "Revolutionize"
+- "Empower"
+- "Unleash"
+- "Streamline"
+- "Enhance"
+- "Unlock"
 
 FORMAT YOUR OUTPUT:
 
