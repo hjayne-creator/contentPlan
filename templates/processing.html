@@ -159,8 +159,11 @@ function checkJobStatus() {
         });
 }
     
+    let themeSelected = false;
     // Function to submit theme selection
     function selectTheme(themeNumber) {
+        if (themeSelected) return;
+        themeSelected = true;
         console.log('Selecting theme:', themeNumber);
         
         // Highlight selected theme
