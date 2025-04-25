@@ -503,10 +503,7 @@ def continue_workflow_after_selection_task(self, job_id):
                     ## Selected Theme
                     **{selected_theme.title}**
                     {selected_theme.description}
-                    
-                    ## Content Cluster Framework
-                    {content_cluster}
-                    
+                                        
                     ## Article Ideas
                     {article_ideas}
                     
