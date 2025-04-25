@@ -384,35 +384,24 @@ def process_workflow_task(self, job_id):
 
 @celery.task(bind=True)
 def continue_workflow_after_selection_task(self, job_id):
-    """Celery task to continue workflow after theme selection"""
+    """Celery task to continue workflow after theme selection, using in_progress flag for concurrency control"""
     from app import app
     
     with app.app_context():
-        # Get a fresh copy of the job with a row-level lock
-        db.session.expire_all()  # Expire all objects in the session
-        job = db.session.query(Job).filter_by(id=job_id).with_for_update().first()
-        db.session.refresh(job)  # Force refresh from DB
-
-        # Log for debugging
-        current_app.logger.info(f"[Job {job_id}] Task started. Status: {job.status}, Phase: {job.current_phase}")
-
-        # Double-check after acquiring the lock
-        if (job.article_ideas is not None and str(job.article_ideas).strip() != "") or job.status != 'processing':
-            add_message_to_job(job, "⚠️ Skipping article ideation: already completed or not in correct phase (pre-ideating).")
-            current_app.logger.warning(f"[Job {job_id}] Skipping Content Writer step. Status: {job.status}, Phase: {job.current_phase} (pre-ideating)")
-            return {'status': 'skipped', 'message': 'Article ideas already exist or job not in correct phase (pre-ideating).'}
-        
-        # Set status to 'ideating' and commit immediately to prevent concurrent ideation
-        job.status = 'ideating'
+        db.session.expire_all()
+        # Atomically claim the job for processing
+        result = db.session.query(Job).filter(
+            Job.id == job_id,
+            Job.in_progress == False
+        ).update({'in_progress': True})
         db.session.commit()
-
-        # Immediately re-fetch and check again
+        if result == 0:
+            current_app.logger.warning(f"[Job {job_id}] Skipping: in_progress already True (another worker is processing)")
+            return {'status': 'skipped', 'message': 'Job is already being processed by another worker.'}
+        
+        # Now safe to proceed
+        job = db.session.query(Job).get(job_id)
         db.session.refresh(job)
-        if (job.article_ideas is not None and str(job.article_ideas).strip() != ""):
-            add_message_to_job(job, "⚠️ Skipping article ideation: already completed after status update.")
-            current_app.logger.warning(f"[Job {job_id}] Skipping Content Writer step after status update.")
-            return {'status': 'skipped', 'message': 'Article ideas already exist after status update.'}
-
         try:
             workflow_manager = WorkflowManager()
             workflow_manager.load_state(job.workflow_data)
@@ -477,7 +466,7 @@ def continue_workflow_after_selection_task(self, job_id):
                 ## Content Cluster Framework
                 {content_cluster}
                 
-                Please create article ideas based on this content cluster framework.
+                Please create article ideas based on this content framework.
                 """
                 
                 article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, user_message)
@@ -525,6 +514,9 @@ def continue_workflow_after_selection_task(self, job_id):
                     add_message_to_job(job, "🎉 Your content strategy is ready!")
                     db.session.commit()
                     
+                    # On successful completion:
+                    job.in_progress = False
+                    db.session.commit()
                     return {'status': 'completed'}
                     
                 except Exception as e:
@@ -548,6 +540,7 @@ def continue_workflow_after_selection_task(self, job_id):
         except Exception as e:
             job.status = 'error'
             job.error = str(e)
+            job.in_progress = False
             add_message_to_job(job, f"❌ Error in theme selection workflow: {str(e)}")
             current_app.logger.error(f"Error in theme selection workflow: {str(e)}")
             current_app.logger.error(traceback.format_exc())
