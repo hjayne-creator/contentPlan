@@ -396,16 +396,23 @@ def continue_workflow_after_selection_task(self, job_id):
         # Log for debugging
         current_app.logger.info(f"[Job {job_id}] Task started. Status: {job.status}, Phase: {job.current_phase}")
 
-        # Only proceed if article_ideas is empty AND job.status is 'processing' or job.current_phase is 'THEME_SELECTION'
+        # Double-check after acquiring the lock
         if (job.article_ideas is not None and str(job.article_ideas).strip() != "") or job.status != 'processing':
-            add_message_to_job(job, "⚠️ Skipping article ideation: already completed or not in correct phase.")
-            current_app.logger.warning(f"[Job {job_id}] Skipping Content Writer step. Status: {job.status}, Phase: {job.current_phase}")
-            return {'status': 'skipped', 'message': 'Article ideas already exist or job not in correct phase.'}
+            add_message_to_job(job, "⚠️ Skipping article ideation: already completed or not in correct phase (pre-ideating).")
+            current_app.logger.warning(f"[Job {job_id}] Skipping Content Writer step. Status: {job.status}, Phase: {job.current_phase} (pre-ideating)")
+            return {'status': 'skipped', 'message': 'Article ideas already exist or job not in correct phase (pre-ideating).'}
         
         # Set status to 'ideating' and commit immediately to prevent concurrent ideation
         job.status = 'ideating'
         db.session.commit()
-        
+
+        # Immediately re-fetch and check again
+        db.session.refresh(job)
+        if (job.article_ideas is not None and str(job.article_ideas).strip() != ""):
+            add_message_to_job(job, "⚠️ Skipping article ideation: already completed after status update.")
+            current_app.logger.warning(f"[Job {job_id}] Skipping Content Writer step after status update.")
+            return {'status': 'skipped', 'message': 'Article ideas already exist after status update.'}
+
         try:
             workflow_manager = WorkflowManager()
             workflow_manager.load_state(job.workflow_data)
