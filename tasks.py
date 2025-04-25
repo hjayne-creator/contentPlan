@@ -426,7 +426,7 @@ def continue_workflow_after_selection_task(self, job_id):
             add_message_to_job(job, "🤖 Generating content clusters and hierarchy...")
             db.session.commit()
             
-            user_message = f"""
+            strategy_message = f"""
             ## Brand Brief
             {job.brand_brief}
             
@@ -437,7 +437,12 @@ def continue_workflow_after_selection_task(self, job_id):
             Please create a content cluster framework based on this theme.
             """
             
-            content_cluster = run_agent_with_openai(CONTENT_STRATEGIST_CLUSTER_PROMPT, user_message)
+            content_cluster = run_agent_with_openai(CONTENT_STRATEGIST_CLUSTER_PROMPT, strategy_message)
+           
+           # Validate we got meaningful content
+            if not content_cluster or len(content_cluster.strip()) < 100:
+                raise Exception("Generated content cluster was empty or too short")
+
             job.content_cluster = content_cluster
             job.progress = 80
             add_message_to_job(job, "✅ Content clusters created")
@@ -455,7 +460,7 @@ def continue_workflow_after_selection_task(self, job_id):
             db.session.commit()
             
             try:
-                user_message = f"""
+                ideation_message = f"""
                 ## Brand Brief
                 {job.brand_brief}
                 
@@ -469,7 +474,13 @@ def continue_workflow_after_selection_task(self, job_id):
                 Please create article ideas based on this content framework.
                 """
                 
-                article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, user_message)
+                article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
+
+                # Validate we got meaningful content
+                if not article_ideas or len(article_ideas.strip()) < 100:
+                    raise Exception("Generated article ideas were empty or too short")
+                
+
                 job.article_ideas = article_ideas
                 job.progress = 90
                 add_message_to_job(job, "✅ Article ideas generated")
@@ -482,7 +493,7 @@ def continue_workflow_after_selection_task(self, job_id):
                 db.session.commit()
                 
                 try:
-                    user_message = f"""
+                    finalization_message = f"""
                     ## Brand Brief
                     {job.brand_brief}
 
@@ -500,7 +511,12 @@ def continue_workflow_after_selection_task(self, job_id):
                     Include in the report a section for article ideas, organized by pillar topics.
                     """
                     
-                    final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, user_message)
+                    final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
+
+                    # Validate we got meaningful content
+                    if not final_plan or len(final_plan.strip()) < 100:
+                        raise Exception("Generated final plan was empty or too short")
+                    
                     job.final_plan = final_plan
                     job.progress = 100
                     
@@ -518,6 +534,7 @@ def continue_workflow_after_selection_task(self, job_id):
                     job.in_progress = False
                     db.session.commit()
                     return {'status': 'completed'}
+                
                     
                 except Exception as e:
                     job.status = 'error'
