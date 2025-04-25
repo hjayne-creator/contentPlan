@@ -552,8 +552,3 @@ def continue_workflow_after_selection_task(self, job_id):
             current_app.logger.error(traceback.format_exc())
             db.session.commit()
             return {'status': 'error', 'message': str(e)}
-
-@celery.task
-def test_task():
-    time.sleep(2)  # Simulate some work
-    return "Test task completed successfully" 
