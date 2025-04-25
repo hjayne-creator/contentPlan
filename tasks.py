@@ -382,7 +382,7 @@ def process_workflow_task(self, job_id):
             db.session.commit()
         return {'status': 'error', 'message': error_msg}
 
-@celery.task(bind=True)
+@celery.task(bind=True, autoretry_for=(), retry=False)
 def continue_workflow_after_selection_task(self, job_id):
     """Celery task to continue workflow after theme selection, using in_progress flag for concurrency control"""
     from app import app
@@ -459,100 +459,112 @@ def continue_workflow_after_selection_task(self, job_id):
             add_message_to_job(job, "🤖 Generating article concepts and titles...")
             db.session.commit()
             
-            try:
-                ideation_message = f"""
-                ## Brand Brief
-                {job.brand_brief}
-                
-                ## Selected Theme
-                **{selected_theme.title}**
-                {selected_theme.description}
-                
-                ## Content Cluster Framework
-                {content_cluster}
-                
-                Please create article ideas based on this content framework.
-                """
-                
-                article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
-
-                # Validate we got meaningful content
-                if not article_ideas or len(article_ideas.strip()) < 100:
-                    raise Exception("Generated article ideas were empty or too short")
-                
-
-                job.article_ideas = article_ideas
-                job.progress = 90
-                add_message_to_job(job, "✅ Article ideas generated")
-                add_message_to_job(job, "📋 Creating final content plan...")
-                db.session.commit()
-                
-                # Final plan generation
-                add_message_to_job(job, "📊 FINALIZING PHASE: Creating comprehensive content plan")
-                add_message_to_job(job, "🤖 Organizing and refining all content components...")
-                db.session.commit()
-                
+            # Add a retry counter directly in the task to track attempts
+            retry_attempts = 0
+            max_retry_attempts = 2  # Limit retries to prevent infinite loops
+            
+            while retry_attempts <= max_retry_attempts:
                 try:
-                    finalization_message = f"""
+                    # Log the attempt number for debugging
+                    logger.info(f"Article ideation attempt #{retry_attempts+1} for job {job_id}")
+                    add_message_to_job(job, f"Attempt #{retry_attempts+1} for article ideation...")
+
+                    ideation_message = f"""
                     ## Brand Brief
                     {job.brand_brief}
-
-                    ## Search Results Analysis
-                    {job.search_analysis}
                     
                     ## Selected Theme
                     **{selected_theme.title}**
                     {selected_theme.description}
-                                        
-                    ## Article Ideas
-                    {article_ideas}
                     
-                    Please create an organized and polished final content plan by reviewing and refining all of the above components. 
-                    Include in the report a section for article ideas, organized by pillar topics.
+                    ## Content Cluster Framework
+                    {content_cluster}
+                    
+                    Please create article ideas based on this content framework.
                     """
                     
-                    final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
+                    article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
 
                     # Validate we got meaningful content
-                    if not final_plan or len(final_plan.strip()) < 100:
-                        raise Exception("Generated final plan was empty or too short")
+                    if not article_ideas or len(article_ideas.strip()) < 100:
+                        raise Exception("Generated article ideas were empty or too short")
                     
-                    job.final_plan = final_plan
-                    job.progress = 100
-                    
-                    # Complete the workflow
-                    workflow_manager.advance_phase()  # To COMPLETION
-                    job.workflow_data = workflow_manager.save_state()
-                    job.current_phase = workflow_manager.current_phase
-                    job.status = 'completed'
-                    job.completed_at = datetime.now()
-                    add_message_to_job(job, "✅ Content plan completed successfully!")
-                    add_message_to_job(job, "🎉 Your content strategy is ready!")
+                    job.article_ideas = article_ideas
+                    job.progress = 90
+                    add_message_to_job(job, "✅ Article ideas generated")
+                    add_message_to_job(job, "📋 Creating final content plan...")
                     db.session.commit()
                     
-                    # On successful completion:
-                    job.in_progress = False
+                    # Final plan generation
+                    add_message_to_job(job, "📊 FINALIZING PHASE: Creating comprehensive content plan")
+                    add_message_to_job(job, "🤖 Organizing and refining all content components...")
                     db.session.commit()
-                    return {'status': 'completed'}
-                
+                    
+                    try:
+                        finalization_message = f"""
+                        ## Brand Brief
+                        {job.brand_brief}
+
+                        ## Search Results Analysis
+                        {job.search_analysis}
+                        
+                        ## Selected Theme
+                        **{selected_theme.title}**
+                        {selected_theme.description}
+                                            
+                        ## Article Ideas
+                        {article_ideas}
+                        
+                        Please create an organized and polished final content plan by reviewing and refining all of the above components. 
+                        Include in the report a section for article ideas, organized by pillar topics.
+                        """
+                        
+                        final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
+
+                        # Validate we got meaningful content
+                        if not final_plan or len(final_plan.strip()) < 100:
+                            raise Exception("Generated final plan was empty or too short")
+                        
+                        job.final_plan = final_plan
+                        job.progress = 100
+                        
+                        # Complete the workflow
+                        workflow_manager.advance_phase()  # To COMPLETION
+                        job.workflow_data = workflow_manager.save_state()
+                        job.current_phase = workflow_manager.current_phase
+                        job.status = 'completed'
+                        job.completed_at = datetime.now()
+                        add_message_to_job(job, "✅ Content plan completed successfully!")
+                        add_message_to_job(job, "🎉 Your content strategy is ready!")
+                        db.session.commit()
+                        
+                        # On successful completion:
+                        job.in_progress = False
+                        db.session.commit()
+                        return {'status': 'completed'}
+                    
+                    except Exception as e:
+                        job.status = 'error'
+                        job.error = f"Error in final plan generation: {str(e)}"
+                        add_message_to_job(job, f"❌ Error in final plan generation: {str(e)}")
+                        current_app.logger.error(f"Error in final plan generation: {str(e)}")
+                        current_app.logger.error(traceback.format_exc())
+                        db.session.commit()
+                        return {'status': 'error', 'message': str(e)}
                     
                 except Exception as e:
-                    job.status = 'error'
-                    job.error = f"Error in final plan generation: {str(e)}"
-                    add_message_to_job(job, f"❌ Error in final plan generation: {str(e)}")
-                    current_app.logger.error(f"Error in final plan generation: {str(e)}")
-                    current_app.logger.error(traceback.format_exc())
-                    db.session.commit()
-                    return {'status': 'error', 'message': str(e)}
-                    
-            except Exception as e:
-                job.status = 'error'
-                job.error = f"Error in article ideation: {str(e)}"
-                add_message_to_job(job, f"❌ Error in article ideation: {str(e)}")
-                current_app.logger.error(f"Error in article ideation: {str(e)}")
-                current_app.logger.error(traceback.format_exc())
-                db.session.commit()
-                return {'status': 'error', 'message': str(e)}
+                    retry_attempts += 1
+                    if retry_attempts > max_retry_attempts:
+                        job.status = 'error'
+                        job.error = f"Error in article ideation: {str(e)}"
+                        add_message_to_job(job, f"❌ Error in article ideation: {str(e)}")
+                        current_app.logger.error(f"Error in article ideation: {str(e)}")
+                        current_app.logger.error(traceback.format_exc())
+                        db.session.commit()
+                        return {'status': 'error', 'message': str(e)}
+                    else:
+                        add_message_to_job(job, f"⚠️ Retry {retry_attempts} for article ideation due to error: {str(e)}")
+                        db.session.commit()
             
         except Exception as e:
             job.status = 'error'
