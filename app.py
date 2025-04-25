@@ -195,6 +195,11 @@ def theme_selection(job_id):
         db.session.expire_all()  # Expire all objects in the session
         job = Job.query.get_or_404(job_id)
         
+        # Check if job is already being processed or not in correct state
+        if job.in_progress or job.status != 'awaiting_selection':
+            app.logger.warning(f"Theme selection rejected: job {job_id} in_progress={job.in_progress}, status={job.status}")
+            return jsonify({'error': 'Job is already being processed or not awaiting selection'}), 409
+        
         # Check if we received valid JSON
         if not request.is_json:
             app.logger.error(f"Received non-JSON request: {request.data}")
@@ -210,9 +215,9 @@ def theme_selection(job_id):
         
         # Idempotency check: if a theme is already selected or job is not awaiting_selection, reject
         already_selected = Theme.query.filter_by(job_id=job_id, is_selected=True).first()
-        if already_selected or job.status != 'awaiting_selection':
-            app.logger.warning(f"Theme selection already made or job not awaiting selection for job {job_id}")
-            return jsonify({'error': 'Theme already selected or job not awaiting selection'}), 409
+        if already_selected:
+            app.logger.warning(f"Theme selection already made for job {job_id}")
+            return jsonify({'error': 'Theme already selected'}), 409
         
         # Update job with selected theme and advance workflow
         workflow_manager = WorkflowManager()
