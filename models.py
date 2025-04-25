@@ -27,6 +27,7 @@ class Job(db.Model):
     final_plan = db.Column(db.Text)
     completed_at = db.Column(db.DateTime)
     themes = db.relationship('Theme', back_populates='job', cascade='all, delete-orphan')
+    in_progress = db.Column(db.Boolean, default=False)
 
     def __init__(self, **kwargs):
         super(Job, self).__init__(**kwargs)
