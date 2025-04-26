@@ -462,38 +462,44 @@ def continue_workflow_after_selection_task(self, job_id):
             add_message_to_job(job, "🤖 Generating article concepts and titles...")
             db.session.commit()
             
-            ideation_message = f"""
-            ## Brand Brief
-            {job.brand_brief}
+            # Idempotency check: skip OpenAI call if article_ideas already exists and is valid
+            if job.article_ideas and len(job.article_ideas.strip()) >= 100:
+                add_message_to_job(job, "ℹ️ Article ideas already exist, skipping OpenAI call.")
+                article_ideas = job.article_ideas
+            else:
+                ideation_message = f"""
+                ## Brand Brief
+                {job.brand_brief}
+                
+                ## Selected Theme
+                **{selected_theme.title}**
+                {selected_theme.description}
+                
+                ## Content Cluster Framework
+                {content_cluster}
+                
+                Please create article ideas based on this content framework.
+                """
+                try:
+                    article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
+                    if not article_ideas or len(article_ideas.strip()) < 100:
+                        raise Exception("OpenAI API returned an empty or too short response for article ideation.")
+                    job.article_ideas = article_ideas
+                    db.session.commit()
+                    add_message_to_job(job, "✅ Article ideas generated")
+                except Exception as e:
+                    job.status = 'error'
+                    job.error = f"Error in article ideation: {str(e)}"
+                    add_message_to_job(job, f"❌ Error in article ideation: {str(e)}")
+                    current_app.logger.error(f"Error in article ideation: {str(e)}")
+                    current_app.logger.error(traceback.format_exc())
+                    db.session.commit()
+                    return {'status': 'error', 'message': str(e)}
             
-            ## Selected Theme
-            **{selected_theme.title}**
-            {selected_theme.description}
-            
-            ## Content Cluster Framework
-            {content_cluster}
-            
-            Please create article ideas based on this content framework.
-            """
-            try:
-                article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
-                if not article_ideas or len(article_ideas.strip()) < 100:
-                    raise Exception("OpenAI API returned an empty or too short response for article ideation.")
-                job.article_ideas = article_ideas
-                job.progress = 85
-                add_message_to_job(job, "✅ Article ideas generated")
-                db.session.commit()
-                self.update_state(state='PROGRESS',
-                                 meta={'current': 85, 'total': 100,
-                                       'status': 'Article ideas generated'})
-            except Exception as e:
-                job.status = 'error'
-                job.error = f"Error in article ideation: {str(e)}"
-                add_message_to_job(job, f"❌ Error in article ideation: {str(e)}")
-                current_app.logger.error(f"Error in article ideation: {str(e)}")
-                current_app.logger.error(traceback.format_exc())
-                db.session.commit()
-                return {'status': 'error', 'message': str(e)}
+            job.progress = 85
+            self.update_state(state='PROGRESS',
+                             meta={'current': 85, 'total': 100,
+                                   'status': 'Article ideas generated'})
 
             # --- Step 3: Final Plan Generation ---
             add_message_to_job(job, "📊 FINALIZING PHASE: Creating comprehensive content plan")
