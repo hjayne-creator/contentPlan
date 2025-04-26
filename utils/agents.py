@@ -8,7 +8,7 @@ import tiktoken
 
 logger = logging.getLogger(__name__)
 
-def count_tokens(text, model="gpt-4o"):
+def count_tokens(text, model="gpt-4o-mini"):
     """Count the number of tokens in a text string."""
     try:
         encoding = tiktoken.encoding_for_model(model)
@@ -18,7 +18,7 @@ def count_tokens(text, model="gpt-4o"):
         # Fallback to rough estimation (1 token ≈ 4 characters)
         return len(text) // 4
 
-def truncate_text(text, max_tokens, model="gpt-4o"):
+def truncate_text(text, max_tokens, model="gpt-4o-mini"):
     """Truncate text to fit within token limit."""
     try:
         encoding = tiktoken.encoding_for_model(model)
@@ -38,7 +38,7 @@ def run_agent_with_openai(system_message, user_message, model=None):
     """
     try:
         # Get the model from config if not provided
-        model = model or current_app.config.get('OPENAI_MODEL', current_app.config.get('OPENAI_MODEL_FALLBACK', 'gpt-4o'))
+        model = model or current_app.config.get('OPENAI_MODEL', current_app.config.get('OPENAI_MODEL_FALLBACK', 'gpt-4o-mini'))
         client = get_openai_client()
 
         # Calculate token counts
