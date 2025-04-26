@@ -61,7 +61,7 @@ def run_agent_with_openai(system_message, user_message, model=None):
 
         # Add timeout and retry logic
         max_retries = 2
-        retry_delay = 4  # seconds
+        retry_delay = 6  # seconds
         last_error = None
 
         for attempt in range(max_retries):
@@ -75,7 +75,7 @@ def run_agent_with_openai(system_message, user_message, model=None):
                     ],
                     temperature=0.7,
                     max_tokens=max_completion_tokens,
-                    timeout=30  # 30 second timeout
+                    timeout=60  # 60 second timeout
                 )
                 end_time = time.time()
                 logger.info(f"OpenAI API call completed in {end_time - start_time:.2f} seconds")
