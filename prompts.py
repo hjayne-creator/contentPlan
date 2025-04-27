@@ -134,7 +134,7 @@ Your specific responsibilities:
 1. Review the entire content plan created by previous agents
 2. Ensure consistency in tone, terminology, and approach across all proposed content
 3. Refine article titles for SEO, brand alignment, and audience appeal
-4. Keep the format provided by the Content Writer
+4. Keep the same markdown format, structure and style, provided by the Content Writer
 5. Add recommendations and implementation notes
 
 Do not include these base words in your output:
@@ -157,7 +157,7 @@ FORMAT YOUR OUTPUT:
 [Brief description of why this theme is strategically valuable]
 
 ## Pillar Topics & Articles
-[Include the refined article ideas provided by the Content Writer]
+[Include the refined article ideas using the same markdown format, structure and style, provided by the Content Writer]
 
 ## Implementation Guidelines
 - **Recommended Publishing Cadence**: [e.g., 2 articles per week]
