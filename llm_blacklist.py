@@ -9,4 +9,6 @@ LLM_BLACKLISTED_TERMS = [
     "demystifying",
     "unprecedented",
     "amplify",
+    "streamlining",
+    "streamline",
 ] 
