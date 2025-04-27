@@ -282,14 +282,14 @@ def process_workflow_task(self, job_id):
                     search_analysis = search_analysis_response.strip()
                 
                 job.search_analysis = search_analysis
-                job.progress = 40
+                job.progress = 50
                 add_message_to_job(job, "✅ Completed search results analysis")
                 add_message_to_job(job, "📊 Moving to content theme generation...")
                 db.session.commit()
                 
                 # Update task state
                 self.update_state(state='PROGRESS',
-                                meta={'current': 40, 'total': 100,
+                                meta={'current': 50, 'total': 100,
                                       'status': 'Research phase completed'})
                 
                 # Advance workflow to ANALYSIS phase
@@ -441,11 +441,11 @@ def continue_workflow_after_selection_task(self, job_id):
                 if not content_cluster or len(content_cluster.strip()) < 100:
                     raise Exception("OpenAI API returned an empty or too short response for content cluster generation.")
                 job.content_cluster = content_cluster
-                job.progress = 70
+                job.progress = 80
                 add_message_to_job(job, "✅ Content clusters created")
                 db.session.commit()
                 self.update_state(state='PROGRESS',
-                                 meta={'current': 70, 'total': 100,
+                                 meta={'current': 80, 'total': 100,
                                        'status': 'Content clusters created'})
             except Exception as e:
                 job.status = 'error'
@@ -495,9 +495,9 @@ def continue_workflow_after_selection_task(self, job_id):
                     db.session.commit()
                     return {'status': 'error', 'message': str(e)}
             
-            job.progress = 80
+            job.progress = 90
             self.update_state(state='PROGRESS',
-                             meta={'current': 80, 'total': 100,
+                             meta={'current': 90, 'total': 100,
                                    'status': 'Article ideas generated'})
 
             # --- Step 3: Final Plan Generation ---
