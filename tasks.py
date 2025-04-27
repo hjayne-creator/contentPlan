@@ -104,14 +104,13 @@ def process_workflow_task(self, job_id):
             # Get job and create a new session
             job = Job.query.get_or_404(job_id)
             
-            # Step 1: Initialize workflow
+            # Initialize workflow
             logger.info("Initializing workflow")
             job.status = 'processing'
             job.progress = 0
             if not job.messages:
                 job.messages = []
             add_message_to_job(job, "Starting workflow processing...")
-            add_message_to_job(job, "Initializing content research workflow...")
             add_message_to_job(job, "Preparing to analyze website content and keywords...")
             db.session.commit()
             
@@ -125,7 +124,7 @@ def process_workflow_task(self, job_id):
                             meta={'current': 0, 'total': 100,
                                   'status': 'Initializing workflow'})
             
-            # Step 2: Scrape website
+            # Scrape website
             add_message_to_job(job, f"🔍 Retrieving content from {job.website_url}...")
             db.session.commit()
             
@@ -151,7 +150,7 @@ def process_workflow_task(self, job_id):
                             meta={'current': 10, 'total': 100,
                                   'status': 'Website content retrieved'})
             
-            # Step 3: Search for keywords
+            # Search for keywords
             add_message_to_job(job, f"🔍 Starting keyword research for: {', '.join(job.keywords)}")
             db.session.commit()
             
@@ -220,7 +219,7 @@ def process_workflow_task(self, job_id):
                             meta={'current': 20, 'total': 100,
                                   'status': 'Search results processed'})
             
-            # Step 4: Begin agent workflow
+            # Begin agent workflow
             add_message_to_job(job, "🤖 Starting AI analysis of content and search results...")
             db.session.commit()
             
@@ -232,7 +231,7 @@ def process_workflow_task(self, job_id):
             
             # Research phase
             add_message_to_job(job, "📊 RESEARCH PHASE: Analyzing website content and search results")
-            add_message_to_job(job, "🔍 Extracting brand information...")
+            #add_message_to_job(job, "🔍 Extracting brand information...")
             db.session.commit()
             
             try:
@@ -301,7 +300,7 @@ def process_workflow_task(self, job_id):
                 
                 # Generate themes
                 add_message_to_job(job, "🎯 ANALYSIS PHASE: Generating content themes")
-                add_message_to_job(job, "🤖 Analyzing brand brief and search results for theme opportunities...")
+                #add_message_to_job(job, "🤖 Analyzing brand brief and search results for theme opportunities...")
                 db.session.commit()
                 
                 user_message = f"""
@@ -423,7 +422,7 @@ def continue_workflow_after_selection_task(self, job_id):
             # --- Step 1: Content Cluster Generation ---
             add_message_to_job(job, "📝 STRATEGY PHASE: Creating content clusters")
             add_message_to_job(job, f"🎯 Processing selected theme: {selected_theme.title}")
-            add_message_to_job(job, "🤖 Generating content clusters and hierarchy...")
+            #add_message_to_job(job, "🤖 Generating content clusters and hierarchy...")
             db.session.commit()
             
             strategy_message = f"""
@@ -442,12 +441,12 @@ def continue_workflow_after_selection_task(self, job_id):
                 if not content_cluster or len(content_cluster.strip()) < 100:
                     raise Exception("OpenAI API returned an empty or too short response for content cluster generation.")
                 job.content_cluster = content_cluster
-                job.progress = 75
+                job.progress = 70
                 add_message_to_job(job, "✅ Content clusters created")
                 db.session.commit()
                 self.update_state(state='PROGRESS',
-                                 meta={'current': 75, 'total': 100,
-                                       'status': 'Content cluster created'})
+                                 meta={'current': 70, 'total': 100,
+                                       'status': 'Content clusters created'})
             except Exception as e:
                 job.status = 'error'
                 job.error = f"Error in content cluster generation: {str(e)}"
@@ -459,7 +458,7 @@ def continue_workflow_after_selection_task(self, job_id):
 
             # --- Step 2: Article Ideation ---
             add_message_to_job(job, "💡 ARTICLE IDEATION PHASE: Developing content ideas")
-            add_message_to_job(job, "🤖 Generating article concepts and titles...")
+            #add_message_to_job(job, "🤖 Generating article concepts and titles...")
             db.session.commit()
             
             # Idempotency check: skip OpenAI call if article_ideas already exists and is valid
@@ -496,14 +495,14 @@ def continue_workflow_after_selection_task(self, job_id):
                     db.session.commit()
                     return {'status': 'error', 'message': str(e)}
             
-            job.progress = 85
+            job.progress = 80
             self.update_state(state='PROGRESS',
-                             meta={'current': 85, 'total': 100,
+                             meta={'current': 80, 'total': 100,
                                    'status': 'Article ideas generated'})
 
             # --- Step 3: Final Plan Generation ---
-            add_message_to_job(job, "📊 FINALIZING PHASE: Creating comprehensive content plan")
-            add_message_to_job(job, "🤖 Organizing and refining all content components...")
+            add_message_to_job(job, "📊 EDITING PHASE: Adding final touches to the content plan")
+            #add_message_to_job(job, "🤖 Organizing and refining all content components...")
             db.session.commit()
             
             finalization_message = f"""
@@ -521,7 +520,6 @@ def continue_workflow_after_selection_task(self, job_id):
             {article_ideas}
             
             Please create an organized and polished final content plan by reviewing and refining all of the above components. 
-            Include in the report a section for article ideas, organized by pillar topics.
             """
             try:
                 final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
