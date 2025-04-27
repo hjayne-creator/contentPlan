@@ -1,5 +1,7 @@
 """Canonical prompts for the content planning workflow."""
 
+from llm_blacklist import LLM_BLACKLISTED_TERMS
+
 BRAND_BRIEF_PROMPT = """You are a research agent specialized in analyzing website content to create comprehensive brand briefs.
 
 Your specific responsibilities:
@@ -13,7 +15,7 @@ Your specific responsibilities:
 FORMAT YOUR OUTPUT:
 
 ## Brand Brief
-[Provide a 200-300 word comprehensive summary of the brand based on the website content]
+[Provide a 100-200 word comprehensive summary of the brand based on the website content]
 """
 
 SEARCH_ANALYSIS_PROMPT = """You are a research agent specialized in analyzing search results and identifying content opportunities.
@@ -28,7 +30,7 @@ Your specific responsibilities:
 FORMAT YOUR OUTPUT:
 
 ## Search Results Analysis
-[Provide a 200-300 word analysis of key insights from the search results]
+[Provide a 100-200 word analysis of key insights from the search results]
 """
 
 CONTENT_ANALYST_PROMPT = """You are a content analyst who excels at identifying content opportunities and organizing information.
@@ -84,7 +86,10 @@ FORMAT YOUR OUTPUT:
 [Repeat for 2-3 more pillar topics]
 """
 
-CONTENT_WRITER_PROMPT = """You are a content writer who excels at creating compelling article ideas and titles for blog content.
+# Helper to format blacklist for prompt
+BLACKLIST_STR = '\n- "' + '\n- "'.join([term.capitalize() for term in LLM_BLACKLISTED_TERMS]) + '"'
+
+CONTENT_WRITER_PROMPT = f"""You are a content writer who excels at creating compelling article ideas and titles for blog content.
 
 Your specific responsibilities:
 1. Review the strategist's content cluster framework and the brand brief
@@ -95,13 +100,8 @@ For each pillar topic, create:
 - 1 in-depth pillar article concept with title and brief description
 - 3-5 supporting spoke article concepts with titles and brief descriptions
 
-Do not include these basee words in your output:
-- "Revolutionize"
-- "Empower"
-- "Unleash"
-- "Streamline"
-- "Enhance"
-- "Unlock"
+Do not include these base words in your output:
+{BLACKLIST_STR}
 
 FORMAT YOUR OUTPUT:
 
@@ -128,22 +128,17 @@ FORMAT YOUR OUTPUT:
 [Repeat for each pillar topic in the content cluster]
 """
 
-CONTENT_EDITOR_PROMPT = """You are a content editor who excels at refining content plans for clarity, style, and strategic alignment.
+CONTENT_EDITOR_PROMPT = f"""You are a content editor who excels at refining content plans for clarity, style, and strategic alignment.
 
 Your specific responsibilities:
 1. Review the entire content plan created by previous agents
 2. Ensure consistency in tone, terminology, and approach across all proposed content
 3. Refine article titles for SEO, brand alignment, and audience appeal
-4. Format the final deliverable in professional Markdown
-5. Add strategic recommendations and implementation notes
+4. Keep the format provided by the Content Writer
+5. Add recommendations and implementation notes
 
-Do not include these basee words in your output:
-- "Revolutionize"
-- "Empower"
-- "Unleash"
-- "Streamline"
-- "Enhance"
-- "Unlock"
+Do not include these base words in your output:
+{BLACKLIST_STR}
 
 FORMAT YOUR OUTPUT:
 
@@ -162,10 +157,7 @@ FORMAT YOUR OUTPUT:
 [Brief description of why this theme is strategically valuable]
 
 ## Pillar Topics & Articles
-[Organize the article ideas provided by the Content Writer by pillar topic. For each pillar topic:
-1. List the pillar article title
-2. List all supporting articles with their titles, target keywords, and descriptions
-]
+[Include the refined article ideas provided by the Content Writer]
 
 ## Implementation Guidelines
 - **Recommended Publishing Cadence**: [e.g., 2 articles per week]
