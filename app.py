@@ -65,6 +65,22 @@ class ContentWorkflowForm(FlaskForm):
     website_url = StringField('Website URL', validators=[DataRequired(), URL()])
     keywords = TextAreaField('Search Keywords (one per line or comma-separated)', validators=[DataRequired()])
 
+# Constants for merging article ideas into the final plan
+FINAL_PLAN_SPLIT_MARKER = "[This section will be provided separately and should not be generated.]"
+PILLAR_TOPICS_HEADING = "## Pillar Topics & Articles"
+
+def merge_final_plan_with_articles(final_plan, article_ideas, split_marker, section_heading):
+    """
+    Inserts article_ideas into final_plan at the split_marker, under the section_heading.
+    If split_marker is not found, returns final_plan unchanged.
+    """
+    if not final_plan:
+        return ""
+    if split_marker in final_plan:
+        before, after = final_plan.split(split_marker, 1)
+        return f"{before}{section_heading}\n\n{article_ideas}\n{after}"
+    return final_plan
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = ContentWorkflowForm()
@@ -184,17 +200,9 @@ def results(job_id):
     if job.status != 'completed':
         return redirect(url_for('process_job', job_id=job_id))
 
-    # Split the final_plan at the placeholder
     plan = job.final_plan or ""
     article_ideas = job.article_ideas or ""
-    # Use the exact placeholder from the prompt
-    split_marker = "[This section will be provided separately and should not be generated.]"
-    if split_marker in plan:
-        before, after = plan.split(split_marker, 1)
-        # Insert the section heading before article_ideas
-        combined_plan = f"{before}## Pillar Topics & Articles\n\n{article_ideas}\n{after}"
-    else:
-        combined_plan = plan  # fallback
+    combined_plan = merge_final_plan_with_articles(plan, article_ideas, FINAL_PLAN_SPLIT_MARKER, PILLAR_TOPICS_HEADING)
 
     job_dict = job.to_dict()
     job_dict['final_plan'] = combined_plan
