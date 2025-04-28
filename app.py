@@ -191,8 +191,8 @@ def results(job_id):
     split_marker = "[This section will be provided separately and should not be generated.]"
     if split_marker in plan:
         before, after = plan.split(split_marker, 1)
-        # Add a newline for markdown separation
-        combined_plan = f"{before}{article_ideas}\n{after}"
+        # Insert the section heading before article_ideas
+        combined_plan = f"{before}## Pillar Topics & Articles\n\n{article_ideas}\n{after}"
     else:
         combined_plan = plan  # fallback
 
