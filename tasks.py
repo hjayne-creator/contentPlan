@@ -282,14 +282,14 @@ def process_workflow_task(self, job_id):
                     search_analysis = search_analysis_response.strip()
                 
                 job.search_analysis = search_analysis
-                job.progress = 50
+                job.progress = 40
                 add_message_to_job(job, "✅ Completed search results analysis")
                 add_message_to_job(job, "📊 Moving to content theme generation...")
                 db.session.commit()
                 
                 # Update task state
                 self.update_state(state='PROGRESS',
-                                meta={'current': 50, 'total': 100,
+                                meta={'current': 40, 'total': 100,
                                       'status': 'Research phase completed'})
                 
                 # Advance workflow to ANALYSIS phase
@@ -433,7 +433,7 @@ def continue_workflow_after_selection_task(self, job_id):
             **{selected_theme.title}**
             {selected_theme.description}
             
-            Please create a content cluster framework based on this theme.
+            ## Instruction:Please create a content cluster framework based on this theme.
             """
             
             try:
@@ -477,7 +477,7 @@ def continue_workflow_after_selection_task(self, job_id):
                 ## Content Cluster Framework
                 {content_cluster}
                 
-                Please create article ideas based on this content framework.
+                ## Instruction: Please create article ideas based on this content framework.
                 """
                 try:
                     article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
@@ -505,47 +505,52 @@ def continue_workflow_after_selection_task(self, job_id):
             #add_message_to_job(job, "🤖 Organizing and refining all content components...")
             db.session.commit()
             
-            finalization_message = f"""
-            ## Brand Brief
-            {job.brand_brief}
+            # Idempotency check: skip OpenAI call if final_plan already exists and is valid
+            if job.final_plan and len(job.final_plan.strip()) >= 100:
+                add_message_to_job(job, "ℹ️ Final plan already exists, skipping OpenAI call.")
+                final_plan = job.final_plan
+            else:
+                finalization_message = f"""
+                ## Brand Brief
+                {job.brand_brief}
 
-            ## Search Results Analysis
-            {job.search_analysis}
-            
-            ## Selected Theme
-            **{selected_theme.title}**
-            {selected_theme.description}
-                                
-            ## Article Ideas
-            {article_ideas}
-            
-            Please create an organized and polished final content plan by reviewing and refining all of the above components. 
-            """
-            try:
-                final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
-                if not final_plan or len(final_plan.strip()) < 100:
-                    raise Exception("OpenAI API returned an empty or too short response for final plan generation.")
-                job.final_plan = final_plan
-                job.progress = 100
-                workflow_manager.advance_phase()  # To COMPLETION
-                job.workflow_data = workflow_manager.save_state()
-                job.current_phase = workflow_manager.current_phase
-                job.status = 'completed'
-                job.completed_at = datetime.now()
-                add_message_to_job(job, "✅ Content plan completed successfully!")
-                add_message_to_job(job, "🎉 Your content strategy is ready!")
-                db.session.commit()
-                job.in_progress = False
-                db.session.commit()
-                return {'status': 'completed'}
-            except Exception as e:
-                job.status = 'error'
-                job.error = f"Error in final plan generation: {str(e)}"
-                add_message_to_job(job, f"❌ Error in final plan generation: {str(e)}")
-                current_app.logger.error(f"Error in final plan generation: {str(e)}")
-                current_app.logger.error(traceback.format_exc())
-                db.session.commit()
-                return {'status': 'error', 'message': str(e)}
+                ## Search Results Analysis
+                {job.search_analysis}
+                
+                ## Selected Theme
+                **{selected_theme.title}**
+                {selected_theme.description}
+                                    
+                ## Article Ideas
+                {article_ideas}
+                
+                ## Instruction: Please create an organized and polished final content plan by reviewing and refining all of the above components. 
+                """
+                try:
+                    final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
+                    if not final_plan or len(final_plan.strip()) < 100:
+                        raise Exception("OpenAI API returned an empty or too short response for final plan generation.")
+                    job.final_plan = final_plan
+                    job.progress = 100
+                    workflow_manager.advance_phase()  # To COMPLETION
+                    job.workflow_data = workflow_manager.save_state()
+                    job.current_phase = workflow_manager.current_phase
+                    job.status = 'completed'
+                    job.completed_at = datetime.now()
+                    add_message_to_job(job, "✅ Content plan completed successfully!")
+                    add_message_to_job(job, "🎉 Your content strategy is ready!")
+                    db.session.commit()
+                    job.in_progress = False
+                    db.session.commit()
+                    return {'status': 'completed'}
+                except Exception as e:
+                    job.status = 'error'
+                    job.error = f"Error in final plan generation: {str(e)}"
+                    add_message_to_job(job, f"❌ Error in final plan generation: {str(e)}")
+                    current_app.logger.error(f"Error in final plan generation: {str(e)}")
+                    current_app.logger.error(traceback.format_exc())
+                    db.session.commit()
+                    return {'status': 'error', 'message': str(e)}
 
         except Exception as e:
             job.status = 'error'
