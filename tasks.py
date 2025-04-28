@@ -433,7 +433,7 @@ def continue_workflow_after_selection_task(self, job_id):
             **{selected_theme.title}**
             {selected_theme.description}
             
-            ## Instruction:Please create a content cluster framework based on this theme.
+            \nPlease create a content cluster framework based on this theme.
             """
             
             try:
@@ -477,7 +477,7 @@ def continue_workflow_after_selection_task(self, job_id):
                 ## Content Cluster Framework
                 {content_cluster}
                 
-                ## Instruction: Please create article ideas based on this content framework.
+                \nPlease create article ideas based on this content framework.
                 """
                 try:
                     article_ideas = run_agent_with_openai(CONTENT_WRITER_PROMPT, ideation_message)
@@ -524,7 +524,7 @@ def continue_workflow_after_selection_task(self, job_id):
                 ## Article Ideas
                 {article_ideas}
                 
-                ## Instruction: Please create an organized and polished final content plan by reviewing and refining all of the above components. 
+                \nPlease create an organized and polished final content plan by reviewing and refining all of the above components. 
                 """
                 try:
                     final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
