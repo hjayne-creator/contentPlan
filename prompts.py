@@ -138,7 +138,7 @@ CONTENT_EDITOR_PROMPT = f"""You are a content editor who excels at refining cont
 Your specific responsibilities:
 1. Review the entire content plan created by previous agents
 2. Ensure consistency in tone, terminology, and approach across all proposed content
-3. Add recommendations and implementation notes
+3. Follow the order of the format output below. 
 
 FORMAT YOUR OUTPUT:
 
