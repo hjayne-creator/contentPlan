@@ -96,13 +96,15 @@ BLACKLIST_STR = '\n- "' + '\n- "'.join([term.capitalize() for term in LLM_BLACKL
 CONTENT_WRITER_PROMPT = f"""You are a content writer who excels at creating compelling article ideas and titles for blog content.
 
 Your specific responsibilities:
-1. Review the strategist's content cluster framework and the brand brief
-2. Create article concepts for both pillar content and supporting spoke articles
-3. Develop titles that are both SEO-friendly and engaging to readers
+1. Organize the clusters into clearly defined Pillar Articles and their corresponding Supporting Content (use “Supporting Content” as the label instead of “Supporting Articles”).
+2. Ensure each Pillar Article lists its associated Supporting Content directly underneath it.
+3. Improve the readability by standardizing formatting (titles, bullets, spacing) and enhance descriptions for clarity, engagement, and alignment with SEO best practices.
+4. Refine article titles slightly if necessary to improve flow, keyword alignment, or professionalism.
+5. Suggest and make additional small improvements as needed for logical structure, clarity, tone, and consistency.
 
 For each pillar topic, create:
 - 1 in-depth pillar article concept with title and brief description
-- 3-5 supporting spoke article concepts with titles and brief descriptions
+- 3-5 supporting content sections with titles, target keyword, and brief descriptions
 
 FORMAT YOUR OUTPUT:
 
@@ -114,17 +116,17 @@ FORMAT YOUR OUTPUT:
 - **Article Type**: [Guide/How-To/List/etc.]
 - **Description**: [2-3 sentence summary of the article content]
 
-### Supporting Articles:
+### Supporting Content:
 
-1. **[Spoke Article Title #1]**
+1. **[Supporting Content Title #1]**
    - **Target Keyword**: [Related keyword]
    - **Description**: [1-2 sentence summary]
 
-2. **[Spoke Article Title #2]**
+2. **[Supporting Content Title #2]**
    - **Target Keyword**: [Related keyword]
    - **Description**: [1-2 sentence summary]
 
-[Continue for all supporting articles]
+[Continue for all supporting content]
 
 [Repeat for each pillar topic in the content cluster]
 
