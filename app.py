@@ -181,11 +181,24 @@ def get_job_status(job_id):
 @app.route('/results/<job_id>', methods=['GET'])
 def results(job_id):
     job = Job.query.get_or_404(job_id)
-    
     if job.status != 'completed':
         return redirect(url_for('process_job', job_id=job_id))
-    
-    return render_template('results.html', job=job.to_dict())
+
+    # Split the final_plan at the placeholder
+    plan = job.final_plan or ""
+    article_ideas = job.article_ideas or ""
+    # Use the exact placeholder from the prompt
+    split_marker = "[This section will be provided separately and should not be generated.]"
+    if split_marker in plan:
+        before, after = plan.split(split_marker, 1)
+        # Add a newline for markdown separation
+        combined_plan = f"{before}{article_ideas}\n{after}"
+    else:
+        combined_plan = plan  # fallback
+
+    job_dict = job.to_dict()
+    job_dict['final_plan'] = combined_plan
+    return render_template('results.html', job=job_dict)
 
 @app.route('/api/theme-selection/<job_id>', methods=['POST'])
 @csrf.exempt
