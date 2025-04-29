@@ -71,15 +71,42 @@ PILLAR_TOPICS_HEADING = "## Pillar Topics & Articles"
 
 def merge_final_plan_with_articles(final_plan, article_ideas, split_marker, section_heading):
     """
-    Inserts article_ideas into final_plan at the split_marker, under the section_heading.
-    If split_marker is not found, returns final_plan unchanged.
+    Ensures article_ideas are always included in the final_plan under the section_heading.
+    - If the section_heading exists, replaces its content with article_ideas.
+    - If the split_marker exists, replaces it with the section_heading and article_ideas.
+    - If neither exists, tries to insert after 'Search Results Analysis' or before 'Implementation Guidelines'.
+    - If no good spot is found, appends at the end.
     """
+    import re
     if not final_plan:
-        return ""
+        return f"{section_heading}\n\n{article_ideas}"
+
+    # 1. If split_marker is present, insert section there
     if split_marker in final_plan:
         before, after = final_plan.split(split_marker, 1)
         return f"{before}{section_heading}\n\n{article_ideas}\n{after}"
-    return final_plan
+
+    # 2. If section_heading exists, replace everything from heading to next h2 or end
+    heading_pattern = re.escape(section_heading)
+    match = re.search(rf"({heading_pattern})(.*?)(?=^## |\Z)", final_plan, re.DOTALL | re.MULTILINE)
+    if match:
+        start, end = match.span(2)
+        return final_plan[:match.start(2)] + f"\n\n{article_ideas}\n" + final_plan[match.end(2):]
+
+    # 3. Try to insert after '## Search Results Analysis'
+    sra_match = re.search(r"(^## Search Results Analysis.*?)(?=^## |\Z)", final_plan, re.DOTALL | re.MULTILINE)
+    if sra_match:
+        insert_pos = sra_match.end(1)
+        return final_plan[:insert_pos] + f"\n\n{section_heading}\n\n{article_ideas}\n" + final_plan[insert_pos:]
+
+    # 4. Try to insert before '## Implementation Guidelines'
+    ig_match = re.search(r"^## Implementation Guidelines", final_plan, re.MULTILINE)
+    if ig_match:
+        insert_pos = ig_match.start()
+        return final_plan[:insert_pos] + f"{section_heading}\n\n{article_ideas}\n\n" + final_plan[insert_pos:]
+
+    # 5. Fallback: append at the end
+    return final_plan + f"\n\n{section_heading}\n\n{article_ideas}\n"
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
