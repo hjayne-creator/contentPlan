@@ -76,10 +76,16 @@ def merge_final_plan_with_articles(final_plan, article_ideas, split_marker, sect
     - If the split_marker exists, replaces it with the section_heading and article_ideas.
     - If neither exists, tries to insert after 'Search Results Analysis' or before 'Implementation Guidelines'.
     - If no good spot is found, appends at the end.
+    - Removes any duplicate sections at the end.
     """
     import re
     if not final_plan:
         return f"{section_heading}\n\n{article_ideas}"
+
+    # Remove any existing duplicate sections at the end
+    final_plan = re.sub(rf"\n{section_heading}.*$", "", final_plan, flags=re.DOTALL)
+    final_plan = re.sub(r"\n## Selected Theme.*$", "", final_plan, flags=re.DOTALL)
+    final_plan = re.sub(r"\n## Article Ideas.*$", "", final_plan, flags=re.DOTALL)
 
     # 1. If split_marker is present, insert section there
     if split_marker in final_plan:
