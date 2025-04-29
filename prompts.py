@@ -108,7 +108,7 @@ For each pillar topic, create:
 
 FORMAT YOUR OUTPUT:
 
-## Content Ideas: [Theme Name]
+## Pillar Topics & Articles: [Theme Name]
 
 ### Pillar Article: [Compelling Title]
 - **Target Keyword**: [Primary keyword]
