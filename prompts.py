@@ -155,9 +155,6 @@ FORMAT YOUR OUTPUT:
 ## Search Results Analysis
 [Include the refined search results analysis]
 
-## Pillar Topics & Articles
-[This section will be provided separately and should not be generated.]
-
 ## Implementation Guidelines
 - **Recommended Publishing Cadence**: [e.g., 2 articles per week]
 - **Content Distribution Channels**: [Recommendations based on brand and audience]
