@@ -72,17 +72,17 @@ Your specific responsibilities:
 
 FORMAT YOUR OUTPUT:
 
-## Content Cluster: [Theme Name]
+### Content Cluster: [Theme Name]
 
-### Brand Alignment
+#### Brand Alignment
 [2-3 sentences explaining how this content cluster aligns with the brand]
 
-### Pillar Topic 1: [Topic Name]
+#### Pillar Topic 1: [Topic Name]
 - **Primary Search Intent**: [Informational/Navigational/Transactional]
 - **Target Audience**: [Specific segment]
 - **Strategic Value**: [SEO/Thought Leadership/Lead Generation/etc.]
 
-#### Supporting Subtopics:
+##### Supporting Subtopics:
 1. [Subtopic 1]
 2. [Subtopic 2]
 3. [Subtopic 3]
@@ -110,13 +110,13 @@ FORMAT YOUR OUTPUT:
 
 ### [Theme Name]
 
-### Pillar Article: [Compelling Title]
+#### Pillar Article: [Compelling Title]
 - **Target Keyword**: [Primary keyword]
 - **Word Count**: [Recommended length]
 - **Article Type**: [Guide/How-To/List/etc.]
 - **Description**: [2-3 sentence summary of the article content]
 
-### Supporting Content:
+#### Supporting Content:
 
 1. **[Supporting Content Title #1]**
    - **Target Keyword**: [Related keyword]
