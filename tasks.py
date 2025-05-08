@@ -520,11 +520,9 @@ def continue_workflow_after_selection_task(self, job_id):
                 ## Selected Theme
                 **{selected_theme.title}**
                 {selected_theme.description}
-                                    
-                ## Article Ideas
-                {article_ideas}
                 
-                \nPlease create an organized and polished final content plan by reviewing and refining all of the above components. 
+                Please create an organized and polished final content plan by reviewing and refining the brand brief and search analysis. 
+                The Pillar Topics & Articles section will be added separately.
                 """
                 try:
                     final_plan = run_agent_with_openai(CONTENT_EDITOR_PROMPT, finalization_message)
