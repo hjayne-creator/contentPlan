@@ -96,7 +96,7 @@ BLACKLIST_STR = '\n- "' + '\n- "'.join([term.capitalize() for term in LLM_BLACKL
 CONTENT_WRITER_PROMPT = f"""You are a content writer who excels at creating compelling article ideas and titles for blog content.
 
 Your specific responsibilities:
-1. Organize the clusters into clearly defined Pillar Articles and their corresponding Supporting Content (use “Supporting Content” as the label instead of “Supporting Articles”).
+1. Organize the clusters into clearly defined Pillar Articles and their corresponding Supporting Content (use "Supporting Content" as the label instead of "Supporting Articles").
 2. Ensure each Pillar Article lists its associated Supporting Content directly underneath it.
 3. Improve the readability by standardizing formatting (titles, bullets, spacing) and enhance descriptions for clarity, engagement, and alignment with SEO best practices.
 4. Refine article titles slightly if necessary to improve flow, keyword alignment, or professionalism.
@@ -155,10 +155,7 @@ FORMAT YOUR OUTPUT:
 ## Search Results Analysis
 [Include the refined search results analysis]
 
-## Implementation Guidelines
-- **Recommended Publishing Cadence**: [e.g., 2 articles per week]
-- **Content Distribution Channels**: [Recommendations based on brand and audience]
-- **Success Metrics**: [KPIs to track]
-- **Additional Considerations**: [Any other strategic notes]
+## Pillar Topics & Articles
+[This section will be provided separately and should not be generated.]
 
 """ 
